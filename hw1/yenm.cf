@@ -1,0 +1,55 @@
+comment  "//" ; 
+comment  "/*" "*/" ;
+position token Id (letter (letter | digit | '_')*) ;
+
+
+PDefs. Program ::= [Def] ; 
+Statements. Def ::= Stm ;
+Include. Def ::= "#include" "<" Id ">" ;
+
+
+Expr. Stm ::= Exp ";" ; 
+EAdd. Exp ::= Exp "+" Exp1;
+ESub. Exp ::= Exp "-" Exp1;
+EMul. Exp1 ::= Exp1 "*" Exp2;
+EDiv. Exp1 ::= Exp1 "/" Exp2;
+EInt. Exp2 ::= Integer; 
+coercions Exp 2 ;
+
+
+Declaration. Stm ::= Type Id ";";
+DeclationInit. Stm ::= Type Id "=" Exp ";" ; 
+TInt. Type ::= "int" ; 
+TChar. Type ::= "char"; 
+TVoid. Type ::= "void"; 
+TQC. Type ::= QCList; 
+ReturnValue. Stm ::=  "return" Exp ";" ;
+
+
+
+
+
+FStream. Stm ::= QCList "<<" [OutList] ";" ; 
+separator OutList "<<" ;
+OutListExp. OutList ::= Exp ; 
+OutListString. OutList ::= String;
+OutListQC. OutList ::= QCList ; 
+
+QC. QCList ::= [QCObj] ; 
+separator QCObj "::" ; 
+QCObj. QCObj ::= Id ; 
+
+
+DFun. Def ::= Type Id "(" [Arg]")" "{" [Stm] "}" ; 
+separator Arg "," ;
+ADecl. Arg ::=  Type Id;  
+
+
+
+
+
+terminator Stm "" ;
+
+terminator Def "" ; 
+
+
