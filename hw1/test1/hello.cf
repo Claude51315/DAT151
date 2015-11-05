@@ -1,0 +1,39 @@
+comment  "//" ; 
+comment  "/*" "*/" ;
+position token Id (letter (letter | digit | '_')*) ;
+PDefs. Program ::= [Def] ; 
+
+Expr. Def ::= Exp ";" ; 
+EAdd. Exp ::= Exp "+" Exp1;
+ESub. Exp ::= Exp "-" Exp1;
+EMul. Exp1 ::= Exp1 "*" Exp2;
+EDiv. Exp1 ::= Exp1 "/" Exp2;
+EInt. Exp2 ::= Integer; 
+coercions Exp 2 ;
+
+Declare. Def ::= Type Id ";" ; 
+TInt. Type ::= "int" ; 
+TChar. Type ::= "char"; 
+TVoid. Type ::= "void"; 
+
+ReturnValue. Def ::=  "return" Integer ";" ;
+
+Include. Def ::= "#include" "<" Id ">" ;  
+
+
+
+DFun. Def ::= Type Id "(" [Arg]")" "{" [Stm] "}" ; 
+separator Arg "," ;
+ADecl. Arg ::=  Type Id;  
+SExp. Stm ::= Exp ";" ; 
+SReturn. Stm ::= Def ; 
+
+
+terminator Stm "" ;
+
+
+
+
+terminator Def "" ; 
+
+
