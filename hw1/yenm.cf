@@ -1,50 +1,123 @@
 comment  "//" ; 
 comment  "/*" "*/" ;
-position token Id (letter (letter | digit | '_')*) ;
+position token Id ( (letter | '_') (letter | digit | '_')*) ;
 
 
 PDefs. Program ::= [Def] ; 
 Statements. Def ::= Stm ;
 Include. Def ::= "#include" "<" Id ">" ;
+PreprocessIfndef. Def ::= "#ifndef" Id [Def] "#endif" ;
+PreprocessIfdefELse. Def ::= "#ifdef" Id [Def] "#else" [Def]  "#endif" ; 
+Using. Def ::= "using" QCList ";";
 
 
 Expr. Stm ::= Exp ";" ; 
-EAdd. Exp ::= Exp "+" Exp1;
-ESub. Exp ::= Exp "-" Exp1;
-EMul. Exp1 ::= Exp1 "*" Exp2;
-EDiv. Exp1 ::= Exp1 "/" Exp2;
-EInt. Exp2 ::= Integer; 
-coercions Exp 2 ;
+Ethrow. Exp ::= "throw" Exp1 ; 
+Econditional. Exp2 ::= Exp3 "?" Exp2 ":" Exp2 ; 
+EAssignment.  Exp2::= Exp3 "=" Exp2 ; 
+EPlusAssignment.  Exp2 ::= Exp3 "+=" Exp2 ; 
+EMinusAssignment.  Exp2 ::= Exp3 "-=" Exp2 ; 
+
+EDisjuction. Exp3 ::= Exp3 "||" Exp4 ; 
+EConsjunction. Exp4 ::= Exp4 "&&" Exp5 ; 
 
 
-Declaration. Stm ::= Type Id ";";
-DeclationInit. Stm ::= Type Id "=" Exp ";" ; 
+EEquality. Exp8 ::= Exp8 "==" Exp9 ; 
+EInequality. Exp8 ::= Exp8 "!=" Exp9;
+
+EGreater. Exp9 ::= Exp9 ">"  Exp10; 
+EGreaterEqual. Exp9 ::=  Exp9 ">=" Exp10; 
+ELess.  Exp9 ::= Exp9 "<" Exp10 ; 
+ELessEqual. Exp9 ::= Exp9 "<=" Exp10; 
+
+ELeftShift. Exp10 ::= Id "<<" [LShiftList] ; 
+ERightShift. Exp10 ::= Id ">>" [RShiftList] ;
+separator LShiftList "<<" ; 
+LShiftObj. LShiftList ::= Exp11 ;  
+separator RShiftList ">>" ; 
+RShiftObj. RShiftList ::= Exp11 ;  
+
+
+EAdd. Exp11 ::= Exp11 "+" Exp12;
+ESub. Exp11 ::= Exp11 "-" Exp12;
+
+EMul. Exp12 ::= Exp12 "*" Exp13;
+EDiv. Exp12 ::= Exp12 "/" Exp13;
+Emod. Exp12 ::= Exp12 "%" Exp13;
+
+PreIncr. Exp13 ::= "++" Exp14 ; 
+PreDecr. Exp13 ::= "--" Exp14; 
+Dereference. Exp13 ::= "*" Id ; 
+Negation. Exp13 ::= "!" Exp14; 
+
+
+
+Dot.  Exp14 ::= Id "." Exp15; 
+Arrow. Exp14 ::= Id "->" Exp15; 
+PostIncr. Exp14 ::= Exp15 "++" ; 
+PostDecr. Exp14 ::= Exp15 "--" ;  
+
+FunctionCall. Exp15 ::= Id "(" [Exp] ")" ;
+Indexing. Exp15 ::= Id "[" Exp "]" ;
+
+Literal. Exp16 ::= Literal ;
+LInt. Literal ::= Integer ; 
+LChar. Literal ::= Char ; 
+LDouble. Literal ::= Double; 
+LString. Literal ::= String ; 
+LId. Literal ::= Id ; 
+LTrue. Literal ::= "true" ;
+LFalse. Literal ::= "false";
+QualifiedConstant. Exp16 ::=  QCList ; 
+coercions Exp 16 ;
+separator Exp "," ; 
+
+
+Declaration. Stm ::=  Type [DList] ";";
+DeclarationPrefix. Stm ::= DPrefix Type [DList] ";" ; 
+separator DList "," ; 
+DObj. DList ::= Id ;
+DobjInit. DList ::= Id "=" Exp ;  
+DeclationInit. Stm ::=  Type Id "=" Exp ";" ; 
 TInt. Type ::= "int" ; 
 TChar. Type ::= "char"; 
 TVoid. Type ::= "void"; 
+TDouble. Type ::= "double" ; 
 TQC. Type ::= QCList; 
+
+DPreInline. DPrefix ::= "inline" ; 
+DPreTypedef. DPrefix ::= "typedef" ; 
+
+
+
 ReturnValue. Stm ::=  "return" Exp ";" ;
 
 
-
-
-
-FStream. Stm ::= QCList "<<" [OutList] ";" ; 
+FStreamOut. Stm ::= QCList "<<" [OutList] ";" ; 
 separator OutList "<<" ;
 OutListExp. OutList ::= Exp ; 
 OutListString. OutList ::= String;
+OutListId. Outlist ::= Id ; 
 OutListQC. OutList ::= QCList ; 
+
+FstreamIn. Stm ::= QCList ">>" [InList] ";" ; 
+separator InList ">>" ;
+InListId. InList ::= Id ; 
+
 
 QC. QCList ::= [QCObj] ; 
 separator QCObj "::" ; 
 QCObj. QCObj ::= Id ; 
+OCObjTemplate. QCObj ::= Id "<" Type ">" ;  
 
-
-DFun. Def ::= Type Id "(" [Arg]")" "{" [Stm] "}" ; 
+DFun. Def ::= Type Id "(" [Arg]")" "{" [Def] "}" ; 
 separator Arg "," ;
 ADecl. Arg ::=  Type Id;  
 
-
+SWhile. Stm ::= "while" "(" Exp ")" Stm ; 
+SIf.   Stm ::= "if" "(" Exp ")" Stm ; 
+SIfElse.  Stm ::= "if" "(" Exp ")" Stm "else" Stm ; 
+SBlock. Stm ::= "{" [Stm] "}" ; 
 
 
 
