@@ -43,8 +43,8 @@ EPreDecr.           Exp13 ::= "--" Exp14;
 EDereference.       Exp13 ::= "*" Id ; 
 ENegation.          Exp13 ::= "!" Exp14; 
 
-EDot.               Exp14 ::= Id "." Exp15; 
-EArrow.             Exp14 ::= Id "->" Exp15; 
+EDot.               Exp14 ::= Exp14 "." Exp15; 
+EArrow.             Exp14 ::= Exp14 "->" Exp15; 
 EPostIncr.          Exp14 ::= Exp15 "++" ; 
 EPostDecr.          Exp14 ::= Exp15 "--" ;  
 
@@ -85,13 +85,16 @@ DPreConst. DPrefix ::= "const" ;
 -}
 
 {- Types -}
+TRef.               Type ::= Type "&" ; 
 TPrefix.            Type ::= Prefix Type; 
 TInt.               Type ::= "int" ; 
 TChar.              Type ::= "char"; 
 TVoid.              Type ::= "void"; 
 TDouble.            Type ::= "double" ; 
 TId.                Type ::= Id;
-TTemplate.          Type ::= Id "<" Type ">"; 
+TTemplate.          Type ::= Id "<" Type ">";
+TTemplateList.      Type ::= Id "<" Type "," [Type] ">" ; 
+separator Type "," ; 
 TQC.                Type ::= QC; 
 
 PrefixConst.        Prefix ::= "const";
@@ -115,12 +118,6 @@ SCin.               Stm ::= "cin" ">>" [InList] ";";
 separator InList ">>" ;
 InListId. InList ::= Id ; 
 -}
-{-
-OutListExp. OutList ::= Exp ;
-OutListString. OutList ::= String;
-OutListId. OutList ::= Id ;
-OutListQC. OutList ::= Id "::" QCList ;
--}
 
 
 QualifiedConst. QC ::= QCObj "::" [QCObj] ; 
@@ -129,21 +126,25 @@ QCObj. QCObj ::= Id ;
 QCObjTemplate. QCObj ::= Id "<" Type ">" ; 
 
 {- Function Declaration -}
-DFun. Def ::= Type Id "(" [Arg]")" "{" [Stm] "}" ; 
+DFun.               Def ::= Type Id "(" [Arg] ")" "{" [Stm] "}" ; 
+DFunHeader.         Def ::= Type Id "(" [Arg] ")" ";" ; 
 separator Arg "," ;
-ADecl. Arg ::=  Type Id;  
-ADeclRef. Arg ::=  Type "&" Id ;  
+ADecl.              Arg ::=  Type Id;  
+ADeclType.          Arg ::=  Type ;
+ADeclRefType.       Arg ::=  Type "&" ;
+ADeclRef.           Arg ::=  Type "&" Id ;  
 
 {-
 ADeclPrefix. Arg ::= DPrefix Type Id ; 
 ADeclPrefixRef. Arg ::= DPrefix Type "&" Id ;
 -}
 
-SWhile. Stm ::= "while" "(" Exp ")" Stm ; 
-SFor. Stm::= "for" "(" Exp ";"  Exp ";" Exp ")" Stm ; 
-SIf.   Stm ::= "if" "(" Exp ")" Stm ; 
-SIfElse.  Stm ::= "if" "(" Exp ")" Stm "else" Stm ; 
-SBlock. Stm ::= "{" [Stm] "}" ; 
+SWhile.             Stm ::= "while" "(" Exp ")" Stm ; 
+SDoWhile.           Stm ::= "do" Stm "while" "(" Exp ")" ";" ; 
+SFor.               Stm ::= "for" "(" Exp ";"  Exp ";" Exp ")" Stm ; 
+SIf.                Stm ::= "if" "(" Exp ")" Stm ; 
+SIfElse.            Stm ::= "if" "(" Exp ")" Stm "else" Stm ; 
+SBlock.             Stm ::= "{" [Stm] "}" ; 
 
 
 terminator Stm "" ;
