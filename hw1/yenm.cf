@@ -116,16 +116,26 @@ DFunHeader.         Stm ::= Type Id "(" [Arg] ")" ";" ;
 separator Arg "," ;
 ADecl.              Arg ::=  Type Id;  
 ADeclType.          Arg ::=  Type ;
+ADeclInit.          Arg ::=  Type Id "=" Exp ; 
 --ADeclRefType.     Arg ::=  Type "&" ;
 --ADeclRef.         Arg ::=  Type "&" Id ;  
 
 
 SWhile.             Stm ::= "while" "(" Exp ")" Stm ; 
 SDoWhile.           Stm ::= "do" Stm "while" "(" Exp ")" ";" ; 
+
+{- need more strict condition -}
 SFor.               Stm ::= "for" "(" Stm  Exp ";" Exp ")" Stm ; 
 SIf.                Stm ::= "if" "(" Exp ")" Stm ; 
 SIfElse.            Stm ::= "if" "(" Exp ")" Stm "else" Stm ; 
 SBlock.             Stm ::= "{" [Stm] "}" ; 
+
+{-Struct-}
+
+SStruct.            Stm ::= "struct" Id "{" [DeclList] "}" ";";
+StrucDecl.          DeclList ::= Type Id ;
+terminator DeclList ";";
+
 
 
 terminator Stm "" ;
