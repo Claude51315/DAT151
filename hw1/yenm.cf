@@ -2,10 +2,9 @@ comment  "//" ;
 comment  "/*" "*/" ;
 comment  "#" ; 
 
-position token Id ( (letter | '_') (letter | digit | '_')*) ;
+position token Id ( (letter ) (letter | digit | '_')*) ;
 
 PDefs. Program ::= [Def] ; 
---Statements. Def ::= Stm ;
 
  
 DUsing.             Def ::= "using" QC ";"; 
@@ -58,7 +57,6 @@ EPostDecr.          Exp14 ::= Exp15 "--" ;
 EFunctionCall.      Exp15 ::= Id "(" [Exp] ")" ;
 EIndexing.          Exp15 ::= Id "[" Exp "]" ;
 
---EForLoopDecal.      Exp16 ::= Type Literals ; 
 Literal.            Exp16 ::= Literals ;
 
 coercions Exp 16 ;
@@ -79,26 +77,16 @@ LQC.                Literals ::= QC ;
 Decl.               Declaration ::= Type Id  ;
 Decls.              Declaration ::= Type Id "," [Id]  ; 
 DeclInit.           Declaration ::= Type Id "=" Exp   ;
-PrefixDecl.         Declaration ::= Prefix Type Id  ;
+PrefixDecl.         Declaration ::= "const" Type Id  ;
 TypedefDecl.        Declaration ::= "typedef" Type Id  ; 
-PrefixDeclInit.     Declaration ::= Prefix Type Id "=" Exp  ;
+PrefixDeclInit.     Declaration ::= "const" Type Id "=" Exp  ;
 
 separator Id "," ; 
 
-{-
-DeclarationPrefix. Stm ::= DPrefix Type [DList] ";" ; 
-separator DList "," ; 
-DObj. DList ::= Id ;
-DobjInit. DList ::= Id "=" Exp ;  
-DPreInline. DPrefix ::= "inline" ;
-DPreTypedef. DPrefix ::= "typedef" ;
-DPreConst. DPrefix ::= "const" ;
--}
 
 {- Types -}
 
 TRef.               Type ::= Type "&" ; 
---TPrefix.            Type ::= Prefix Type; 
 TInt.               Type ::= "int" ; 
 TVoid.              Type ::= "void"; 
 TDouble.            Type ::= "double" ; 
@@ -106,9 +94,6 @@ TBool.              Type ::= "bool" ;
 TId.                Type ::= Id ; 
 TTemplate.          Type ::= Id "<" [Type] ">" ; 
 TQC.                Type ::= QC; 
-
-PrefixConst.        Prefix ::= "const";
---PrefixTypedef.      Prefix ::= "typedef";
 
 {- Return Value -}
 SReturn.            Stm ::=  "return" Exp ";" ;
@@ -132,11 +117,9 @@ ADecl.              Arg ::=  Type Id;
 ADeclType.          Arg ::=  Type ;
 ADeclInit.          Arg ::=  Type Id "=" Exp ; 
 
-APrefixDecl.        Arg ::=  Prefix Type Id  ; 
-APrefixDeclType.    Arg ::=  Prefix Type ; 
-APrefixDeclInit.    Arg ::=  Prefix Type Id "=" Exp ; 
---ADeclRefType.     Arg ::=  Type "&" ;
---ADeclRef.         Arg ::=  Type "&" Id ;  
+APrefixDecl.        Arg ::=  "const" Type Id  ; 
+APrefixDeclType.    Arg ::=  "const" Type ; 
+APrefixDeclInit.    Arg ::=  "const" Type Id "=" Exp ; 
 
 
 SWhile.             Stm ::= "while" "(" Exp ")" Stm ; 
@@ -153,7 +136,6 @@ SBlock.             Stm ::= "{" [Stm] "}" ;
 SStruct.            Struct ::= "struct" Id "{" [DeclList] "}" ";";
 StrucDecl.          DeclList ::= Type Id ;
 terminator DeclList ";";
-
 
 
 terminator Stm "" ;
