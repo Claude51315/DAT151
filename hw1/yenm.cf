@@ -5,10 +5,16 @@ comment  "#" ;
 position token Id ( (letter | '_') (letter | digit | '_')*) ;
 
 PDefs. Program ::= [Def] ; 
-Statements. Def ::= Stm ;
+--Statements. Def ::= Stm ;
 
  
-SUsing. Def ::= "using" QC ";"; 
+DUsing.             Def ::= "using" QC ";"; 
+DefDecl.            Def ::= Declaration ; 
+StmDecl.            Stm ::= Declaration ;
+DefStruct.          Def ::= Struct ; 
+StmStruct.          Stm ::= Struct ; 
+
+
 {- definitions of Expression-}
 SExpr.              Stm  ::= Exp ";" ; 
 Ethrow.             Exp  ::= "throw" Exp1 ; 
@@ -69,12 +75,12 @@ LId.                Literals ::= Id ;
 LQC.                Literals ::= QC ; 
 
 {- Declarations -}
-SDecl.              Stm ::= Type Id ";" ;
-SDecls.             Stm ::= Type Id "," [Id] ";" ; 
-SDeclInit.          Stm ::= Type Id "=" Exp  ";" ;
-SPrefixDecl.        Stm ::= Prefix Type Id ";" ;
-STypedefDecl.       Stm ::= "typedef" Type Id ";" ; 
-SPrefixDeclInit.    Stm ::= Prefix Type Id "=" Exp ";" ;
+SDecl.              Declaration ::= Type Id ";" ;
+SDecls.             Declaration ::= Type Id "," [Id] ";" ; 
+SDeclInit.          Declaration ::= Type Id "=" Exp  ";" ;
+SPrefixDecl.        Declaration ::= Prefix Type Id ";" ;
+STypedefDecl.       Declaration ::= "typedef" Type Id ";" ; 
+SPrefixDeclInit.    Declaration ::= Prefix Type Id "=" Exp ";" ;
 
 separator Id "," ; 
 
@@ -114,10 +120,10 @@ QCObjTemplate. QCList ::= Id "<" [Type] ">" ;
 separator nonempty Type "," ; 
 
 {- Function Declaration -}
-DFun.               Stm ::= Type Id "(" [Arg] ")" "{" [Stm] "}" ; 
-DFunHeader.         Stm ::= Type Id "(" [Arg] ")" ";" ; 
-DInlineFun.         Stm ::= "inline" Type Id "(" [Arg] ")" "{" [Stm] "}" ;
-DInlineFunHeader.   Stm ::= "inline" Type Id "(" [Arg] ")" ";" ;
+DFun.               Def ::= Type Id "(" [Arg] ")" "{" [Stm] "}" ; 
+DFunHeader.         Def ::= Type Id "(" [Arg] ")" ";" ; 
+DInlineFun.         Def ::= "inline" Type Id "(" [Arg] ")" "{" [Stm] "}" ;
+DInlineFunHeader.   Def ::= "inline" Type Id "(" [Arg] ")" ";" ;
 
 
 separator Arg "," ;
@@ -143,7 +149,7 @@ SBlock.             Stm ::= "{" [Stm] "}" ;
 
 {-Struct-}
 
-SStruct.            Stm ::= "struct" Id "{" [DeclList] "}" ";";
+SStruct.            Struct ::= "struct" Id "{" [DeclList] "}" ";";
 StrucDecl.          DeclList ::= Type Id ;
 terminator DeclList ";";
 
