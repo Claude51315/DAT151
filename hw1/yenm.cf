@@ -73,6 +73,7 @@ SDecl.              Stm ::= Type Id ";" ;
 SDecls.             Stm ::= Type Id "," [Id] ";" ; 
 SDeclInit.          Stm ::= Type Id "=" Exp  ";" ;
 SPrefixDecl.        Stm ::= Prefix Type Id ";" ;
+STypedefDecl.       Stm ::= "typedef" Type Id ";" ; 
 SPrefixDeclInit.    Stm ::= Prefix Type Id "=" Exp ";" ;
 
 separator Id "," ; 
@@ -100,7 +101,7 @@ TTemplate.          Type ::= Id "<" [Type] ">" ;
 TQC.                Type ::= QC; 
 
 PrefixConst.        Prefix ::= "const";
-PrefixTypedef.      Prefix ::= "typedef";
+--PrefixTypedef.      Prefix ::= "typedef";
 
 {- Return Value -}
 SReturn.            Stm ::=  "return" Exp ";" ;
