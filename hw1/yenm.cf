@@ -9,8 +9,9 @@ PDefs. Program ::= [Def] ;
 
  
 DUsing.             Def ::= "using" QC ";"; 
-DefDecl.            Def ::= Declaration ; 
-StmDecl.            Stm ::= Declaration ;
+DefDecl.            Def ::= Declaration ";" ; 
+StmDecl.            Stm ::= Declaration ";" ;
+ForDecl.            ForStm ::= Declaration ; 
 DefStruct.          Def ::= Struct ; 
 StmStruct.          Stm ::= Struct ; 
 
@@ -75,12 +76,12 @@ LId.                Literals ::= Id ;
 LQC.                Literals ::= QC ; 
 
 {- Declarations -}
-SDecl.              Declaration ::= Type Id ";" ;
-SDecls.             Declaration ::= Type Id "," [Id] ";" ; 
-SDeclInit.          Declaration ::= Type Id "=" Exp  ";" ;
-SPrefixDecl.        Declaration ::= Prefix Type Id ";" ;
-STypedefDecl.       Declaration ::= "typedef" Type Id ";" ; 
-SPrefixDeclInit.    Declaration ::= Prefix Type Id "=" Exp ";" ;
+Decl.               Declaration ::= Type Id  ;
+Decls.              Declaration ::= Type Id "," [Id]  ; 
+DeclInit.           Declaration ::= Type Id "=" Exp   ;
+PrefixDecl.         Declaration ::= Prefix Type Id  ;
+TypedefDecl.        Declaration ::= "typedef" Type Id  ; 
+PrefixDeclInit.     Declaration ::= Prefix Type Id "=" Exp  ;
 
 separator Id "," ; 
 
@@ -142,7 +143,7 @@ SWhile.             Stm ::= "while" "(" Exp ")" Stm ;
 SDoWhile.           Stm ::= "do" Stm "while" "(" Exp ")" ";" ; 
 
 {- need more strict condition -}
-SFor.               Stm ::= "for" "(" Stm  Exp ";" Exp ")" Stm ; 
+SFor.               Stm ::= "for" "(" ForStm ";" Exp ";" Exp ")" Stm ; 
 SIf.                Stm ::= "if" "(" Exp ")" Stm ; 
 SIfElse.            Stm ::= "if" "(" Exp ")" Stm "else" Stm ; 
 SBlock.             Stm ::= "{" [Stm] "}" ; 
