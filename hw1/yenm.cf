@@ -7,7 +7,7 @@ position token Id ( (letter | '_') (letter | digit | '_')*) ;
 PDefs. Program ::= [Def] ; 
 Statements. Def ::= Stm ;
 
-
+ 
 SUsing. Def ::= "using" QC ";"; 
 {- definitions of Expression-}
 SExpr.              Stm  ::= Exp ";" ; 
@@ -40,7 +40,7 @@ Emod.               Exp12 ::= Exp12 "%" Exp13;
 
 EPreIncr.           Exp13 ::= "++" Exp14 ; 
 EPreDecr.           Exp13 ::= "--" Exp14; 
-EDereference.       Exp13 ::= "*" Id ; 
+EDereference.       Exp13 ::= "*" Exp14 ; 
 ENegation.          Exp13 ::= "!" Exp14; 
 
 EDot.               Exp14 ::= Exp14 "." Exp15; 
@@ -51,7 +51,7 @@ EPostDecr.          Exp14 ::= Exp15 "--" ;
 EFunctionCall.      Exp15 ::= Id "(" [Exp] ")" ;
 EIndexing.          Exp15 ::= Id "[" Exp "]" ;
 
-EForLoopDecal.      Exp16 ::= Type Literals ; 
+--EForLoopDecal.      Exp16 ::= Type Literals ; 
 Literal.            Exp16 ::= Literals ;
 
 coercions Exp 16 ;
@@ -61,16 +61,17 @@ separator Exp "," ;
 LInt.               Literals ::= Integer ; 
 LChar.              Literals ::= Char ; 
 LDouble.            Literals ::= Double; 
-LString.            Literals ::= String ; 
-LId.                Literals ::= Id ; 
+LString.            Literals ::= [String] ;
+separator nonempty  String "" ; 
 LTrue.              Literals ::= "true" ;
 LFalse.             Literals ::= "false";
+LId.                Literals ::= Id ; 
 LQC.                Literals ::= QC ; 
 
 {- Declarations -}
-SDecl.              Stm ::= Type Id ";";
+SDecl.              Stm ::= Type Id ";" ;
 SDecls.             Stm ::= Type Id "," [Id] ";" ; 
-SDeclInit.          Stm ::= Type Id "=" Exp ";" ;
+SDeclInit.          Stm ::= Type Id "=" Exp  ";" ;
 
 separator Id "," ; 
 
@@ -88,13 +89,11 @@ DPreConst. DPrefix ::= "const" ;
 TRef.               Type ::= Type "&" ; 
 TPrefix.            Type ::= Prefix Type; 
 TInt.               Type ::= "int" ; 
-TChar.              Type ::= "char"; 
 TVoid.              Type ::= "void"; 
 TDouble.            Type ::= "double" ; 
-TId.                Type ::= Id;
-TTemplate.          Type ::= Id "<" Type ">";
-TTemplateList.      Type ::= Id "<" Type "," [Type] ">" ; 
-separator Type "," ; 
+TBool.              Type ::= "bool" ;
+TId.                Type ::= Id ; 
+TTemplate.          Type ::= Id "<" [Type] ">" ; 
 TQC.                Type ::= QC; 
 
 PrefixConst.        Prefix ::= "const";
@@ -104,44 +103,26 @@ PrefixInline.       Prefix ::= "inline" ;
 {- Return Value -}
 SReturn.            Stm ::=  "return" Exp ";" ;
 
-
-{- cout & cin   -}
-{-
-SStdCout.           Stm ::= QC     "<<" [ExpOutList] ";" ; 
-SCout.              Stm ::= "cout" "<<" [ExpOutList] ";" ;
-separator ExpOutList "<<" ;
-OutListExp.         ExpOutList ::= Exp ;
-OutListQC.          ExpOutList ::= QC ; 
-
-SStdCin.            Stm ::= QC    ">>" [InList] ";" ; 
-SCin.               Stm ::= "cin" ">>" [InList] ";";
-separator InList ">>" ;
-InListId. InList ::= Id ; 
--}
-
-
-QualifiedConst. QC ::= QCObj "::" [QCObj] ; 
-separator QCObj "::" ; 
-QCObj. QCObj ::= Id ;
-QCObjTemplate. QCObj ::= Id "<" Type ">" ; 
+{- Qualified Constant -}
+QualifiedConst. QC ::= QCList "::" [QCList] ; 
+separator nonempty QCList "::" ; 
+QCObj. QCList ::= Id ;
+QCObjTemplate. QCList ::= Id "<" [Type] ">" ; 
+separator nonempty Type "," ; 
 
 {- Function Declaration -}
-DFun.               Def ::= Type Id "(" [Arg] ")" "{" [Stm] "}" ; 
-DFunHeader.         Def ::= Type Id "(" [Arg] ")" ";" ; 
+DFun.               Stm ::= Type Id "(" [Arg] ")" "{" [Stm] "}" ; 
+DFunHeader.         Stm ::= Type Id "(" [Arg] ")" ";" ; 
 separator Arg "," ;
 ADecl.              Arg ::=  Type Id;  
 ADeclType.          Arg ::=  Type ;
-ADeclRefType.       Arg ::=  Type "&" ;
-ADeclRef.           Arg ::=  Type "&" Id ;  
+--ADeclRefType.     Arg ::=  Type "&" ;
+--ADeclRef.         Arg ::=  Type "&" Id ;  
 
-{-
-ADeclPrefix. Arg ::= DPrefix Type Id ; 
-ADeclPrefixRef. Arg ::= DPrefix Type "&" Id ;
--}
 
 SWhile.             Stm ::= "while" "(" Exp ")" Stm ; 
 SDoWhile.           Stm ::= "do" Stm "while" "(" Exp ")" ";" ; 
-SFor.               Stm ::= "for" "(" Exp ";"  Exp ";" Exp ")" Stm ; 
+SFor.               Stm ::= "for" "(" Stm  Exp ";" Exp ")" Stm ; 
 SIf.                Stm ::= "if" "(" Exp ")" Stm ; 
 SIfElse.            Stm ::= "if" "(" Exp ")" Stm "else" Stm ; 
 SBlock.             Stm ::= "{" [Stm] "}" ; 
