@@ -72,6 +72,8 @@ LQC.                Literals ::= QC ;
 SDecl.              Stm ::= Type Id ";" ;
 SDecls.             Stm ::= Type Id "," [Id] ";" ; 
 SDeclInit.          Stm ::= Type Id "=" Exp  ";" ;
+SPrefixDecl.        Stm ::= Prefix Type Id ";" ;
+SPrefixDeclInit.    Stm ::= Prefix Type Id "=" Exp ";" ;
 
 separator Id "," ; 
 
@@ -86,8 +88,9 @@ DPreConst. DPrefix ::= "const" ;
 -}
 
 {- Types -}
+
 TRef.               Type ::= Type "&" ; 
-TPrefix.            Type ::= Prefix Type; 
+--TPrefix.            Type ::= Prefix Type; 
 TInt.               Type ::= "int" ; 
 TVoid.              Type ::= "void"; 
 TDouble.            Type ::= "double" ; 
@@ -98,7 +101,6 @@ TQC.                Type ::= QC;
 
 PrefixConst.        Prefix ::= "const";
 PrefixTypedef.      Prefix ::= "typedef";
-PrefixInline.       Prefix ::= "inline" ;
 
 {- Return Value -}
 SReturn.            Stm ::=  "return" Exp ";" ;
@@ -113,10 +115,18 @@ separator nonempty Type "," ;
 {- Function Declaration -}
 DFun.               Stm ::= Type Id "(" [Arg] ")" "{" [Stm] "}" ; 
 DFunHeader.         Stm ::= Type Id "(" [Arg] ")" ";" ; 
+DInlineFun.         Stm ::= "inline" Type Id "(" [Arg] ")" "{" [Stm] "}" ;
+DInlineFunHeader.   Stm ::= "inline" Type Id "(" [Arg] ")" ";" ;
+
+
 separator Arg "," ;
 ADecl.              Arg ::=  Type Id;  
 ADeclType.          Arg ::=  Type ;
 ADeclInit.          Arg ::=  Type Id "=" Exp ; 
+
+APrefixDecl.        Arg ::=  Prefix Type Id  ; 
+APrefixDeclType.    Arg ::=  Prefix Type ; 
+APrefixDeclInit.    Arg ::=  Prefix Type Id "=" Exp ; 
 --ADeclRefType.     Arg ::=  Type "&" ;
 --ADeclRef.         Arg ::=  Type "&" Id ;  
 
