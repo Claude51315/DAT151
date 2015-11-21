@@ -40,12 +40,10 @@ public class TypeChecker {
         public boolean isVarDecl (String id )
         {
             TypeCode t ; 
-            for (HashMap<String , TypeCode> context : contexts )
-            {
-                t = context.get(id);
-                if(t != null)
-                    return true ; 
-            }
+            HashMap<String , TypeCode> context =  contexts.getFirst(); 
+            t = context.get(id);
+            if(t != null)
+                return true ; 
             return false ;
         }
         public FunType lookupFun (String id)
@@ -82,6 +80,30 @@ public class TypeChecker {
     {
         PDefs defs = (PDefs) p ; 
         Env env = new Env() ; 
+        // add build-in function def 
+        FunType readInt = new FunType(); 
+        FunType readDouble = new FunType(); 
+        FunType printInt = new FunType(); 
+        FunType printDouble = new FunType(); 
+
+        readInt.returnType = TypeCode.Type_int ; 
+        readInt.args = new LinkedList<TypeCode>() ;
+        env.signature.put("readInt", readInt) ;
+
+        readDouble.returnType = TypeCode.Type_double ;
+        readDouble.args = new LinkedList<TypeCode>() ;
+        env.signature.put("readDouble", readDouble) ;
+
+        printInt.returnType = TypeCode.Type_void ;
+        printInt.args = new LinkedList<TypeCode>() ;
+        printInt.args.addLast(TypeCode.Type_int);
+        env.signature.put("printInt", printInt) ;
+
+        printDouble.returnType = TypeCode.Type_void ;
+        printDouble.args = new LinkedList<TypeCode>() ;
+        printDouble.args.addLast(TypeCode.Type_double);
+        env.signature.put("printDouble", printDouble) ;
+
         for(Def d : defs.listdef_ )
         {
             // add function declaration 
@@ -145,7 +167,7 @@ public class TypeChecker {
             // add return Type to contex to check SReturn 
             TypeCode returnType = getTypeCode(p.type_);
             env.addVar("return" , returnType) ; 
-            if(returnType == TypeCode.Type_void)
+            if(returnType == TypeCode.Type_void || p.id_ == "main")
                 env.returnFlag = 1 ;
             for (Stm x : p.liststm_)
             {
@@ -397,8 +419,6 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("ELt error: exps not match");
-            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
-                throw new TypeException("ELt error: exp is boolean");
 
             return TypeCode.Type_bool ;
         }
@@ -409,8 +429,6 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EGt error: exps not match");
-            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
-                throw new TypeException("EGt error: exp is boolean");
 
             return TypeCode.Type_bool ;
 
@@ -422,8 +440,6 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("ELtEq error: exps not match");
-            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
-                throw new TypeException("ELtEq error: exp is boolean");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EGtEq p , Env env)
@@ -433,8 +449,6 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EGtEq error: exps not match");
-            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
-                throw new TypeException("EGtEq error: exp is boolean");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EEq p , Env env)
@@ -460,9 +474,9 @@ public class TypeChecker {
            // System.out.println ("EAnd");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
-            if(t1 != t2)
-                throw new TypeException("EAnd error: exps not match");
-            
+            if(t1 != TypeCode.Type_bool || t2 != TypeCode.Type_bool )
+                throw new TypeException("EAnd error: exps must be boolean type");
+           
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EOr p , Env env)
@@ -470,8 +484,8 @@ public class TypeChecker {
            // System.out.println ("EOr");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
-            if(t1 != t2)
-                throw new TypeException("EOr error: exps not match");
+            if(t1 != TypeCode.Type_bool || t2 != TypeCode.Type_bool )
+                throw new TypeException("EOr error: exps must be boolean type");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EAss p , Env env)
