@@ -12,13 +12,14 @@ public class TypeChecker {
         public TypeCode returnType; 
     }
     public static class Env {
-        //             FuncId  
         public HashMap<String , FunType> signature ; 
         public LinkedList<HashMap<String , TypeCode>> contexts ; 
+        public int returnFlag ; 
         public Env() 
         {
             contexts = new LinkedList<HashMap<String , TypeCode>>();
             signature = new HashMap<String , FunType> () ; 
+            returnFlag = 0 ; 
             enterScope(); 
         }
         public TypeCode lookupVar(String id )
@@ -32,6 +33,21 @@ public class TypeChecker {
             }
             throw new TypeException("There is no variable called [ " + id + "] ");
         }
+        public boolean isFunDecl (String id )
+        {
+            return signature.containsKey(id); 
+        }
+        public boolean isVarDecl (String id )
+        {
+            TypeCode t ; 
+            for (HashMap<String , TypeCode> context : contexts )
+            {
+                t = context.get(id);
+                if(t != null)
+                    return true ; 
+            }
+            return false ;
+        }
         public FunType lookupFun (String id)
         {
             FunType t = signature.get(id) ; 
@@ -40,22 +56,17 @@ public class TypeChecker {
             else
                 return t ; 
         }
-        public void updateVar (String id , TypeCode Ty )
+        public void addVar(String id , TypeCode Ty )
         {
-            // get the current scope of variable , i.e. the first element of the linkedlist contexts
-            HashMap<String , TypeCode> cur_scope = contexts.getFirst() ;
-            if(cur_scope.containsKey(id))
+            HashMap<String , TypeCode> cur_scope = contexts.getFirst() ; 
+            if(isVarDecl(id))
             {
-                TypeCode tmp = cur_scope.get(id) ; 
-                if(tmp == Ty )
-                {
-                    System.out.println("foo");
-                }    
-                else
-                    throw new TypeException("The variable [ " + id + "] has the Type" + Ty + ", not "+ tmp );
+                throw new TypeException("The variable [ " + id + "] has been decalared" );
             }
             else
-                throw new TypeException("There is no variable called [ " + id + "] ");
+            {
+                cur_scope.put(id , Ty );
+            }
         }
         public void enterScope()
         {
@@ -66,46 +77,83 @@ public class TypeChecker {
             contexts.removeFirst(); 
         }
     }
-
+    // entry point 
     public void typecheck(Program p) 
     {
         PDefs defs = (PDefs) p ; 
         Env env = new Env() ; 
         for(Def d : defs.listdef_ )
         {
-            checkDef(d , env) ; 
+            // add function declaration 
+            checkDef1(d , env) ; 
         }
+        for(Def d : defs.listdef_)
+        {
+            // check statement in each function 
+            checkDef2(d , env);
+            if(env.returnFlag == 0) 
+                throw new TypeException("Missing return Stattment");
+            else
+                env.returnFlag = 0 ; 
+        }
+        System.out.println(env.signature.size());
         throw new TypeException("Not yetQQQQ a typechecker");
     }
     // check for Defs 
-    private void checkDef(Def d , Env env)
+    private void checkDef1(Def d , Env env)
     {
-        d.accept(new defVisitor() , env);
+        d.accept(new defAdder() , env);
     }
-    private class defVisitor implements Def.Visitor<Object , Env> 
+    private void checkDef2(Def d , Env env)
+    {
+        d.accept(new defFuncStmChecker() , env);
+    }
+    private class defAdder implements Def.Visitor<Object , Env> 
     {
         public Object visit(CPP.Absyn.DFun p, Env env)
         {
             /* Code For DFun Goes Here */
+            if(env.isFunDecl(p.id_))
+                throw new TypeException("the function identifier has been used!");
+            
             FunType FT = new FunType() ; 
-            TypeCode returnType = getTypeCode(p.type_) ;
-            FT.returnType = returnType; 
+            FT.returnType = getTypeCode(p.type_); 
             FT.args = new LinkedList<TypeCode>() ; 
             //env.signature.put(p.id_ ,)
             //p.type_.accept(new TypeVisitor(), env);
             //p.id_;
             for (Arg x : p.listarg_) 
             {
-             
                 FT.args.addLast(getTypeCode(((ADecl)x).type_)) ; 
             }
             env.signature.put(p.id_ , FT) ; 
-            for (Stm x : p.liststm_) 
-            {
-                checkStm(x , env);
-            }
             return null;
         }                                
+    }
+    private class defFuncStmChecker implements Def.Visitor<Object , Env>
+    {
+        public Object visit(CPP.Absyn.DFun p , Env env)
+        {
+            env.enterScope() ; 
+            // add function args to current scope 
+            ADecl tmp ;
+            for (Arg x : p.listarg_)
+            {  
+                tmp = (ADecl)x ; 
+                env.addVar(tmp.id_ ,getTypeCode( tmp.type_));
+            }
+            // add return Type to contex to check SReturn 
+            TypeCode returnType = getTypeCode(p.type_);
+            env.addVar("return" , returnType) ; 
+            if(returnType == TypeCode.Type_void)
+                env.returnFlag = 1 ;
+            for (Stm x : p.liststm_)
+            {
+                checkStm(x , env); 
+            }
+            env.leaveScope();
+            return null; 
+        }
     }
     // check for statements 
     private void checkStm (Stm x , Env env)
@@ -117,7 +165,7 @@ public class TypeChecker {
         public Object visit(CPP.Absyn.SExp p, Env env)
         {
             /* Code For SExp Goes Here */
-            System.out.println("an Exp");
+            p.exp_.accept(new ExpChecker() , env) ; 
             //p.exp_.accept(new ExpVisitor<R,A>(), arg);
 
             return null;
@@ -126,18 +174,27 @@ public class TypeChecker {
         {
             /* Code For SDecls Goes Here */
 
-            System.out.println("an Decl");
-            //p.type_.accept(new TypeVisitor<R,A>(), arg);
-            //for (String x : p.listid_) {
-            //}
-
+            //System.out.println("an Decl");
+            TypeCode Ty = getTypeCode(p.type_);
+            for (String x : p.listid_) {
+                env.addVar(x , Ty );
+            }
             return null;
         }
         public Object visit(CPP.Absyn.SInit p, Env env)
         {
             /* Code For SInit Goes Here */
-            System.out.println("an Init");
-
+            System.out.println("decalation with initialization");
+            // check if the iden. of the variable exists 
+            env.lookupVar(p.id_);
+            // check if the type of the exp match the type of the decl.
+            TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
+            TypeCode VarType = getTypeCode(p.type_); 
+            if(expType != VarType)
+                throw new TypeException("SInit error: Types do not match");
+            else
+                env.addVar(p.id_ , VarType);
+            // add to env 
             //p.type_.accept(new TypeVisitor<R,A>(), arg);
             //p.id_;
             //p.exp_.accept(new ExpVisitor<R,A>(), arg);
@@ -146,10 +203,15 @@ public class TypeChecker {
         public Object visit(CPP.Absyn.SReturn p, Env env)
         {
             /* Code For SReturn Goes Here */
-
+           
+             // check the returnType equal to function declaration 
+            
             //p.exp_.accept(new ExpVisitor<R,A>(), arg);
 
-            System.out.println("an return ");
+            p.exp_.accept(new ExpChecker() , env) ; 
+            TypeCode t  = env.lookupVar("return");
+            System.out.println("return" + t );
+            env.returnFlag = 1 ; 
             return null;
         }
         public Object visit(CPP.Absyn.SWhile p, Env env)
@@ -157,8 +219,12 @@ public class TypeChecker {
             /* Code For SWhile Goes Here */
 
             System.out.println("an while");
+            // check the exp return a boolean 
+            p.exp_.accept(new ExpChecker() , env) ; 
+            // check the stm of while 
+            checkStm(p.stm_ , env) ; 
             //p.exp_.accept(new ExpVisitor<R,A>(), arg);
-            //p.stm_.accept(new StmVisitor<R,A>(), arg);
+            //
 
             return null;
         }
@@ -166,10 +232,11 @@ public class TypeChecker {
         {
             /* Code For SBlock Goes Here */
             System.out.println("an block");
-
-            //for (Stm x : p.liststm_) {
-            //} 
-
+            env.enterScope();
+            for (Stm x : p.liststm_) {
+               checkStm(x , env);
+            } 
+            env.leaveScope() ;
             return null;
         }
         public Object visit(CPP.Absyn.SIfElse p, Env env)
@@ -181,10 +248,136 @@ public class TypeChecker {
             //p.stm_2.accept(new StmVisitor<R,A>(), arg);
 
             System.out.println("an if else");
+            p.exp_.accept(new ExpChecker() , env) ; 
             return null;
         }
           
     }
+    private class ExpChecker implements Exp.Visitor<TypeCode , Env>   
+    {
+        public TypeCode visit(CPP.Absyn.ETrue p , Env env) 
+        {
+            System.out.println ("ETrue");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EFalse p , Env env)
+        {
+            System.out.println ("EFalse");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EInt p , Env env)
+        {
+            System.out.println ("EInt");
+            return TypeCode.Type_int ;
+        }
+        public TypeCode visit(CPP.Absyn.EApp p , Env env)
+        {
+            // return return type the function 
+            System.out.println ("EApp");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EDouble p , Env env)
+        {
+            System.out.println ("EDouble");
+            return TypeCode.Type_double;
+        }
+        public TypeCode visit(CPP.Absyn.EId p , Env env)
+        {
+            // to be resolved 
+            System.out.println ("EId");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EPostIncr p , Env env)
+        {
+            // to be resolved
+            System.out.println ("EPostIncr");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EPostDecr p , Env env)
+        {
+            System.out.println ("EPostDecr");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EPreIncr p , Env env)
+        {
+            System.out.println ("EPreIncr");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EPreDecr p , Env env)
+        {
+            System.out.println ("EPreDecr");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.ETimes p , Env env)
+        {
+            System.out.println ("ETimes");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EDiv p , Env env)
+        {
+            System.out.println ("EDiv");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EPlus p , Env env)
+        {
+            System.out.println ("EPlus");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.EMinus p , Env env)
+        {
+            System.out.println ("EMinus");
+            return null ;
+        }
+        public TypeCode visit(CPP.Absyn.ELt p , Env env)
+        {
+            System.out.println ("ELt");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EGt p , Env env)
+        {
+            System.out.println ("EGt");
+            return TypeCode.Type_bool ;
+
+        }
+        public TypeCode visit(CPP.Absyn.ELtEq p , Env env)
+        {
+            System.out.println ("ELtEq");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EGtEq p , Env env)
+        {
+            System.out.println ("EGtEq");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EEq p , Env env)
+        {
+            System.out.println ("EEq");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.ENEq p , Env env)
+        {
+            System.out.println ("ENEq");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EAnd p , Env env)
+        {
+            System.out.println ("EAnd");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EOr p , Env env)
+        {
+            System.out.println ("EOr");
+            return TypeCode.Type_bool ;
+        }
+        public TypeCode visit(CPP.Absyn.EAss p , Env env)
+        {
+            System.out.println ("EAss");
+            return null ;
+        }
+    } 
+
+
+
     private TypeCode getTypeCode(Type t)
     {
         return t.accept(new TypeCoder() , null);
