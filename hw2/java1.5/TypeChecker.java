@@ -165,7 +165,8 @@ public class TypeChecker {
         public Object visit(CPP.Absyn.SExp p, Env env)
         {
             /* Code For SExp Goes Here */
-            p.exp_.accept(new ExpChecker() , env) ; 
+            //p.exp_.accept(new ExpChecker() , env) ; 
+            TypeCode expType = checkExp(p.exp_ , env );
             //p.exp_.accept(new ExpVisitor<R,A>(), arg);
 
             return null;
@@ -188,44 +189,39 @@ public class TypeChecker {
             // check if the iden. of the variable exists 
             env.lookupVar(p.id_);
             // check if the type of the exp match the type of the decl.
-            TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
+            //TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
+            TypeCode expType = checkExp(p.exp_ , env );
             TypeCode VarType = getTypeCode(p.type_); 
             if(expType != VarType)
                 throw new TypeException("SInit error: Types do not match");
             else
                 env.addVar(p.id_ , VarType);
-            // add to env 
-            //p.type_.accept(new TypeVisitor<R,A>(), arg);
-            //p.id_;
-            //p.exp_.accept(new ExpVisitor<R,A>(), arg);
             return null;
         }
         public Object visit(CPP.Absyn.SReturn p, Env env)
         {
             /* Code For SReturn Goes Here */
-           
              // check the returnType equal to function declaration 
-            
-            //p.exp_.accept(new ExpVisitor<R,A>(), arg);
-
-            p.exp_.accept(new ExpChecker() , env) ; 
-            TypeCode t  = env.lookupVar("return");
-            System.out.println("return" + t );
+            System.out.println("return" );
+            //TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
+            TypeCode expType = checkExp(p.exp_ , env );
+            TypeCode returnType  = env.lookupVar("return");
+            if(expType != returnType )
+                throw new TypeException("SReturn error: return type not match");
             env.returnFlag = 1 ; 
             return null;
         }
         public Object visit(CPP.Absyn.SWhile p, Env env)
         {
             /* Code For SWhile Goes Here */
-
             System.out.println("an while");
             // check the exp return a boolean 
-            p.exp_.accept(new ExpChecker() , env) ; 
+            //TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
+            TypeCode expType = checkExp(p.exp_ , env );
+            if(expType != TypeCode.Type_bool)
+                throw new TypeException("SWhile error: exp not boolean type");
             // check the stm of while 
             checkStm(p.stm_ , env) ; 
-            //p.exp_.accept(new ExpVisitor<R,A>(), arg);
-            //
-
             return null;
         }
         public Object visit(CPP.Absyn.SBlock p, Env env)
@@ -243,16 +239,24 @@ public class TypeChecker {
         {
             /* Code For SIfElse Goes Here */
 
-            //p.exp_.accept(new ExpVisitor<R,A>(), arg);
+            System.out.println("an if else");
+            
+           // TypeCode expType = p.exp_.accept(new ExpChecker(), env);
+            TypeCode expType = checkExp(p.exp_ , env );
+            if(expType != TypeCode.Type_bool)
+                throw new TypeException("SIfElse error: exp not booelan type ");
+            checkStm(p.stm_1 , env); 
+            checkStm(p.stm_2 , env);
             //p.stm_1.accept(new StmVisitor<R,A>(), arg);
             //p.stm_2.accept(new StmVisitor<R,A>(), arg);
-
-            System.out.println("an if else");
-            p.exp_.accept(new ExpChecker() , env) ; 
             return null;
         }
           
     }
+    public TypeCode checkExp(Exp exp , Env env)
+    {
+        return exp.accept(new ExpChecker() , env );
+    };
     private class ExpChecker implements Exp.Visitor<TypeCode , Env>   
     {
         public TypeCode visit(CPP.Absyn.ETrue p , Env env) 
@@ -272,9 +276,27 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EApp p , Env env)
         {
-            // return return type the function 
+            // return return type the function
+            /*
+ * public static class FunType {
+ *         public LinkedList<TypeCode> args ;
+ *                 public TypeCode returnType;
+ *                     }
+ *
+ *          */
+            FunType fun = env.lookupFun(p.id_); 
+            int tmp = 0 , arg_list1 = fun.args.size() , arg_list2 = p.listexp_.size(); 
+            if(arg_list1 != arg_list2)
+                throw new TypeException("EApp error: lenth of args not match");
+            for(Exp x : p.listexp_)
+            {
+                if(checkExp(x, env) != fun.args.get(tmp) )
+                    throw new TypeException("EApp error: "+ tmp + " th arg type not match");
+                else
+                    tmp ++;
+            }
             System.out.println ("EApp");
-            return null ;
+            return fun.returnType ;
         }
         public TypeCode visit(CPP.Absyn.EDouble p , Env env)
         {
@@ -283,96 +305,160 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EId p , Env env)
         {
-            // to be resolved 
             System.out.println ("EId");
-            return null ;
+            return env.lookupVar(p.id_) ;
         }
         public TypeCode visit(CPP.Absyn.EPostIncr p , Env env)
         {
             // to be resolved
+            TypeCode expType = checkExp(p.exp_ , env);
             System.out.println ("EPostIncr");
-            return null ;
+            return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPostDecr p , Env env)
         {
             System.out.println ("EPostDecr");
-            return null ;
+            TypeCode expType = checkExp(p.exp_ , env);
+            return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPreIncr p , Env env)
         {
             System.out.println ("EPreIncr");
-            return null ;
+            TypeCode expType = checkExp(p.exp_ , env);
+            return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPreDecr p , Env env)
         {
             System.out.println ("EPreDecr");
-            return null ;
+            TypeCode expType = checkExp(p.exp_ , env);
+            return expType ;
         }
         public TypeCode visit(CPP.Absyn.ETimes p , Env env)
         {
             System.out.println ("ETimes");
-            return null ;
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("ETimes error: exps not match");
+            else
+                return t1 ;
         }
         public TypeCode visit(CPP.Absyn.EDiv p , Env env)
         {
             System.out.println ("EDiv");
-            return null ;
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EDiv error: exps not match");
+            else
+                return t1 ;
         }
         public TypeCode visit(CPP.Absyn.EPlus p , Env env)
         {
             System.out.println ("EPlus");
-            return null ;
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EPlus error: exps not match");
+            else
+                return t1 ;       
         }
         public TypeCode visit(CPP.Absyn.EMinus p , Env env)
         {
             System.out.println ("EMinus");
-            return null ;
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EMinus error: exps not match");
+            else
+                return t1 ;
         }
         public TypeCode visit(CPP.Absyn.ELt p , Env env)
         {
             System.out.println ("ELt");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("ELt error: exps not match");
+
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EGt p , Env env)
         {
             System.out.println ("EGt");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EGt error: exps not match");
             return TypeCode.Type_bool ;
 
         }
         public TypeCode visit(CPP.Absyn.ELtEq p , Env env)
         {
             System.out.println ("ELtEq");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("ELtEq error: exps not match");
+
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EGtEq p , Env env)
         {
             System.out.println ("EGtEq");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EGtEq error: exps not match");
+
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EEq p , Env env)
         {
             System.out.println ("EEq");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EEq error: exps not match");
+
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.ENEq p , Env env)
         {
             System.out.println ("ENEq");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("ENEq error: exps not match");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EAnd p , Env env)
         {
             System.out.println ("EAnd");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EAnd error: exps not match");
+
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EOr p , Env env)
         {
             System.out.println ("EOr");
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EOr error: exps not match");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EAss p , Env env)
         {
             System.out.println ("EAss");
-            return null ;
+            TypeCode t1 = checkExp(p.exp_1 , env);
+            TypeCode t2 = checkExp(p.exp_2 , env);
+            if(t1 != t2)
+                throw new TypeException("EAss error: exps not match");
+            return t1 ;
         }
     } 
 
