@@ -97,7 +97,7 @@ public class TypeChecker {
                 env.returnFlag = 0 ; 
         }
         //System.out.println(env.signature.size());
-        throw new TypeException("Not yetQQQQ a typechecker");
+        //throw new TypeException("Not yetQQQQ a typechecker");
     }
     // check for Defs 
     private void checkDef1(Def d , Env env)
@@ -187,7 +187,8 @@ public class TypeChecker {
             /* Code For SInit Goes Here */
             //System.out.println("decalation with initialization");
             // check if the iden. of the variable exists 
-            env.lookupVar(p.id_);
+            if(env.isVarDecl(p.id_))
+                throw new TypeException("SInit error: variable name confict");
             // check if the type of the exp match the type of the decl.
             //TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
             TypeCode expType = checkExp(p.exp_ , env );
@@ -312,6 +313,8 @@ public class TypeChecker {
         {
             // to be resolved
             TypeCode expType = checkExp(p.exp_ , env);
+            if(expType == TypeCode.Type_bool)
+                throw new TypeException("EPostIncr error : can't use boolean");
             //System.out.println ("EPostIncr");
             return expType ;
         }
@@ -319,18 +322,24 @@ public class TypeChecker {
         {
             //System.out.println ("EPostDecr");
             TypeCode expType = checkExp(p.exp_ , env);
+            if(expType == TypeCode.Type_bool)
+                throw new TypeException("EPostIncr error : can't use boolean");
             return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPreIncr p , Env env)
         {
             //System.out.println ("EPreIncr");
             TypeCode expType = checkExp(p.exp_ , env);
+            if(expType == TypeCode.Type_bool)
+                throw new TypeException("EPostIncr error : can't use boolean");
             return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPreDecr p , Env env)
         {
             //System.out.println ("EPreDecr");
             TypeCode expType = checkExp(p.exp_ , env);
+            if(expType == TypeCode.Type_bool)
+                throw new TypeException("EPostIncr error : can't use boolean");
             return expType ;
         }
         public TypeCode visit(CPP.Absyn.ETimes p , Env env)
@@ -340,6 +349,8 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("ETimes error: exps not match");
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("ETimes error: exp is boolean");
             else
                 return t1 ;
         }
@@ -350,6 +361,8 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EDiv error: exps not match");
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("EDiv error: exp is boolean");
             else
                 return t1 ;
         }
@@ -360,6 +373,8 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EPlus error: exps not match");
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("EPlus error: exp is boolean");
             else
                 return t1 ;       
         }
@@ -370,6 +385,8 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EMinus error: exps not match");
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("EMinus error: exp is boolean");
             else
                 return t1 ;
         }
@@ -380,6 +397,8 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("ELt error: exps not match");
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("ELt error: exp is boolean");
 
             return TypeCode.Type_bool ;
         }
@@ -390,6 +409,9 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EGt error: exps not match");
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("EGt error: exp is boolean");
+
             return TypeCode.Type_bool ;
 
         }
@@ -400,7 +422,8 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("ELtEq error: exps not match");
-
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("ELtEq error: exp is boolean");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EGtEq p , Env env)
@@ -410,7 +433,8 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EGtEq error: exps not match");
-
+            else if (t1 == TypeCode.Type_bool || t2 == TypeCode.Type_bool)
+                throw new TypeException("EGtEq error: exp is boolean");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EEq p , Env env)
@@ -420,7 +444,6 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EEq error: exps not match");
-
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.ENEq p , Env env)
@@ -439,7 +462,7 @@ public class TypeChecker {
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
                 throw new TypeException("EAnd error: exps not match");
-
+            
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EOr p , Env env)
