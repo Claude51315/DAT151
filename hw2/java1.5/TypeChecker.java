@@ -96,7 +96,7 @@ public class TypeChecker {
             else
                 env.returnFlag = 0 ; 
         }
-        System.out.println(env.signature.size());
+        //System.out.println(env.signature.size());
         throw new TypeException("Not yetQQQQ a typechecker");
     }
     // check for Defs 
@@ -185,7 +185,7 @@ public class TypeChecker {
         public Object visit(CPP.Absyn.SInit p, Env env)
         {
             /* Code For SInit Goes Here */
-            System.out.println("decalation with initialization");
+            //System.out.println("decalation with initialization");
             // check if the iden. of the variable exists 
             env.lookupVar(p.id_);
             // check if the type of the exp match the type of the decl.
@@ -202,7 +202,7 @@ public class TypeChecker {
         {
             /* Code For SReturn Goes Here */
              // check the returnType equal to function declaration 
-            System.out.println("return" );
+            //System.out.println("return" );
             //TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
             TypeCode expType = checkExp(p.exp_ , env );
             TypeCode returnType  = env.lookupVar("return");
@@ -214,7 +214,7 @@ public class TypeChecker {
         public Object visit(CPP.Absyn.SWhile p, Env env)
         {
             /* Code For SWhile Goes Here */
-            System.out.println("an while");
+            //System.out.println("an while");
             // check the exp return a boolean 
             //TypeCode expType = p.exp_.accept(new ExpChecker() , env) ; 
             TypeCode expType = checkExp(p.exp_ , env );
@@ -227,7 +227,7 @@ public class TypeChecker {
         public Object visit(CPP.Absyn.SBlock p, Env env)
         {
             /* Code For SBlock Goes Here */
-            System.out.println("an block");
+            //System.out.println("an block");
             env.enterScope();
             for (Stm x : p.liststm_) {
                checkStm(x , env);
@@ -239,7 +239,7 @@ public class TypeChecker {
         {
             /* Code For SIfElse Goes Here */
 
-            System.out.println("an if else");
+            //System.out.println("an if else");
             
            // TypeCode expType = p.exp_.accept(new ExpChecker(), env);
             TypeCode expType = checkExp(p.exp_ , env );
@@ -261,17 +261,17 @@ public class TypeChecker {
     {
         public TypeCode visit(CPP.Absyn.ETrue p , Env env) 
         {
-            System.out.println ("ETrue");
+            //System.out.println ("ETrue");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EFalse p , Env env)
         {
-            System.out.println ("EFalse");
+            //System.out.println ("EFalse");
             return TypeCode.Type_bool ;
         }
         public TypeCode visit(CPP.Absyn.EInt p , Env env)
         {
-            System.out.println ("EInt");
+            //System.out.println ("EInt");
             return TypeCode.Type_int ;
         }
         public TypeCode visit(CPP.Absyn.EApp p , Env env)
@@ -295,47 +295,47 @@ public class TypeChecker {
                 else
                     tmp ++;
             }
-            System.out.println ("EApp");
+            //System.out.println ("EApp");
             return fun.returnType ;
         }
         public TypeCode visit(CPP.Absyn.EDouble p , Env env)
         {
-            System.out.println ("EDouble");
+            //System.out.println ("EDouble");
             return TypeCode.Type_double;
         }
         public TypeCode visit(CPP.Absyn.EId p , Env env)
         {
-            System.out.println ("EId");
+            //System.out.println ("EId");
             return env.lookupVar(p.id_) ;
         }
         public TypeCode visit(CPP.Absyn.EPostIncr p , Env env)
         {
             // to be resolved
             TypeCode expType = checkExp(p.exp_ , env);
-            System.out.println ("EPostIncr");
+            //System.out.println ("EPostIncr");
             return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPostDecr p , Env env)
         {
-            System.out.println ("EPostDecr");
+            //System.out.println ("EPostDecr");
             TypeCode expType = checkExp(p.exp_ , env);
             return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPreIncr p , Env env)
         {
-            System.out.println ("EPreIncr");
+            //System.out.println ("EPreIncr");
             TypeCode expType = checkExp(p.exp_ , env);
             return expType ;
         }
         public TypeCode visit(CPP.Absyn.EPreDecr p , Env env)
         {
-            System.out.println ("EPreDecr");
+            //System.out.println ("EPreDecr");
             TypeCode expType = checkExp(p.exp_ , env);
             return expType ;
         }
         public TypeCode visit(CPP.Absyn.ETimes p , Env env)
         {
-            System.out.println ("ETimes");
+           // System.out.println ("ETimes");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -345,7 +345,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EDiv p , Env env)
         {
-            System.out.println ("EDiv");
+           // System.out.println ("EDiv");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -355,7 +355,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EPlus p , Env env)
         {
-            System.out.println ("EPlus");
+            //System.out.println ("EPlus");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -365,7 +365,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EMinus p , Env env)
         {
-            System.out.println ("EMinus");
+            //System.out.println ("EMinus");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -375,7 +375,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.ELt p , Env env)
         {
-            System.out.println ("ELt");
+            //System.out.println ("ELt");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -385,7 +385,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EGt p , Env env)
         {
-            System.out.println ("EGt");
+            //System.out.println ("EGt");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -395,7 +395,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.ELtEq p , Env env)
         {
-            System.out.println ("ELtEq");
+            //System.out.println ("ELtEq");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -405,7 +405,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EGtEq p , Env env)
         {
-            System.out.println ("EGtEq");
+            //System.out.println ("EGtEq");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -415,7 +415,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EEq p , Env env)
         {
-            System.out.println ("EEq");
+            //System.out.println ("EEq");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -425,7 +425,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.ENEq p , Env env)
         {
-            System.out.println ("ENEq");
+           // System.out.println ("ENEq");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -434,7 +434,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EAnd p , Env env)
         {
-            System.out.println ("EAnd");
+           // System.out.println ("EAnd");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -444,7 +444,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EOr p , Env env)
         {
-            System.out.println ("EOr");
+           // System.out.println ("EOr");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -453,7 +453,7 @@ public class TypeChecker {
         }
         public TypeCode visit(CPP.Absyn.EAss p , Env env)
         {
-            System.out.println ("EAss");
+           // System.out.println ("EAss");
             TypeCode t1 = checkExp(p.exp_1 , env);
             TypeCode t2 = checkExp(p.exp_2 , env);
             if(t1 != t2)
@@ -489,33 +489,3 @@ public class TypeChecker {
 
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
