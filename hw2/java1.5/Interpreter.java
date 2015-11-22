@@ -1,23 +1,31 @@
 import CPP.Absyn.*;
 import java.util.HashMap;
 import java.util.LinkedList;  
-
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Scanner ; 
 public class Interpreter {
     public static enum TypeCode 
     {
         Type_int , Type_double , Type_bool , Type_void 
     }
-    public static class FunType {
-        public LinkedList<TypeCode> args ; 
-        public TypeCode returnType; 
+    //public DataInputStream DataIn = new DataInputStream(System.in) ;
+    public Scanner Scan = new Scanner(System.in);
+    public static class FunExe {
+        public LinkedList<String> args ;
+        public LinkedList<Stm> liststm_; 
+        public Value returnValue; 
     }
     public static class Env {
-        public HashMap<String , FunType> signature ; 
+        public HashMap<String , FunExe> signature ; 
         public LinkedList<HashMap<String , Value>> contexts ; 
         public Env() 
         {
             contexts = new LinkedList<HashMap<String , Value>>();
-            signature = new HashMap<String , FunType> () ; 
+            signature = new HashMap<String , FunExe> () ; 
             enterScope(); 
         }
         public Value lookupVar(String id )
@@ -44,11 +52,11 @@ public class Interpreter {
                 return true ; 
             return false ;
         }
-        public FunType lookupFun (String id)
+        public FunExe lookupFun (String id)
         {
-            FunType t = signature.get(id) ; 
+            FunExe t = signature.get(id) ; 
             if (t == null)
-                throw new TypeException("There is no [" + id + "] function");
+                throw new RuntimeException("There is no [" + id + "] function");
             else
                 return t ; 
         }
@@ -124,30 +132,6 @@ public class Interpreter {
     {
         PDefs defs = (PDefs) p ; 
         Env env = new Env() ; 
-        // add build-in function def 
-        FunType readInt = new FunType(); 
-        FunType readDouble = new FunType(); 
-        FunType printInt = new FunType(); 
-        FunType printDouble = new FunType(); 
-
-        readInt.returnType = TypeCode.Type_int ; 
-        readInt.args = new LinkedList<TypeCode>() ;
-        env.signature.put("readInt", readInt) ;
-
-        readDouble.returnType = TypeCode.Type_double ;
-        readDouble.args = new LinkedList<TypeCode>() ;
-        env.signature.put("readDouble", readDouble) ;
-
-        printInt.returnType = TypeCode.Type_void ;
-        printInt.args = new LinkedList<TypeCode>() ;
-        printInt.args.addLast(TypeCode.Type_int);
-        env.signature.put("printInt", printInt) ;
-
-        printDouble.returnType = TypeCode.Type_void ;
-        printDouble.args = new LinkedList<TypeCode>() ;
-        printDouble.args.addLast(TypeCode.Type_double);
-        env.signature.put("printDouble", printDouble) ;
-
         for(Def d : defs.listdef_ )
         {
             // add function execution body
@@ -159,8 +143,6 @@ public class Interpreter {
             // executio main function 
             checkDef2(d , env);
         }
-        //System.out.println(env.signature.size());
-        //throw new TypeException("Not yetQQQQ a typechecker");
     }
     // check for Defs 
     private void checkDef1(Def d , Env env)
@@ -179,7 +161,28 @@ public class Interpreter {
             if(p.id_ != "main")
             {
                 //add function execution body here
-            
+                /*
+ *                   public static class FunExe {
+ *                           public LinkedList<Value> args ;
+ *                                   public LinkedList<Stm> liststm_;
+ *                                           public Value returnValue;
+ *                                               }
+ *                                                   public static class Env {
+ *                                                           public HashMap<String , FunExe> signature ;
+ *                                                                   public LinkedList<HashMap<String , Value>> contexts ;
+ *                                                                   
+ *                  */
+                FunExe F = new FunExe() ;     
+                F.liststm_ = new LinkedList<Stm>() ;
+                F.liststm_ = p.liststm_ ;
+                F.args = new LinkedList<String>(); 
+                for (Arg x  : p.listarg_)
+                {
+                    ADecl tmp = (ADecl)x; 
+                    F.args.addLast(tmp.id_); 
+                }
+                env.signature.put(p.id_ , F) ; 
+                
             }
             return null; 
         }                                
@@ -202,21 +205,19 @@ public class Interpreter {
         }
     }
     // check for statements 
-    private void exeStm (Stm s , Env env)
+    private Value exeStm (Stm s , Env env)
     {
-        s.accept(new StmExecuter() , env);
+        return  s.accept(new StmExecuter() , env);
     }
-    private class StmExecuter implements Stm.Visitor<Object , Env>
+    private class StmExecuter implements Stm.Visitor<Value , Env>
     {
-        public Object visit(CPP.Absyn.SExp p, Env env)
+        public Value visit(CPP.Absyn.SExp p, Env env)
         {
             /* Code For SExp Goes Here */
-            Value v = exeExp(p.exp_ , env ) ; 
-            String s = v.print();
-            System.out.println(s);
+            exeExp(p.exp_ , env ) ; 
             return null;
         }
-        public Object visit(CPP.Absyn.SDecls p, Env env)
+        public Value visit(CPP.Absyn.SDecls p, Env env)
         {
             /* Code For SDecls Goes Here */
             for(String x :p.listid_)
@@ -226,7 +227,7 @@ public class Interpreter {
             //System.out.println("an Decl");
             return null;
         }
-        public Object visit(CPP.Absyn.SInit p, Env env)
+        public Value visit(CPP.Absyn.SInit p, Env env)
         {
             /* Code For SInit Goes Here */
             //System.out.println("decalation with initialization");
@@ -234,23 +235,26 @@ public class Interpreter {
             env.setVar(p.id_ , exeExp(p.exp_ , env));
             return null;
         }
-        public Object visit(CPP.Absyn.SReturn p, Env env)
+        public Value visit(CPP.Absyn.SReturn p, Env env)
         {
             /* Code For SReturn Goes Here */
              // check the returnType equal to function declaration 
             //System.out.println("return" );
-            return null;
+            Value t = exeExp(p.exp_ , env);
+            //System.out.println("SReturn : " + t.toString());
+            return t ;
         }
-        public Object visit(CPP.Absyn.SWhile p, Env env)
+        public Value visit(CPP.Absyn.SWhile p, Env env)
         {
             /* Code For SWhile Goes Here */
-            //System.out.println("an while");
             while(true)
             {
                 Value t = exeExp(p.exp_ , env);
                 if(t.isInt())
                 {
-                    if(t.getInt() == 1 )
+                    
+                    Integer a = t.getInt();
+                    if( a.equals(1) )
                     {
                         exeStm(p.stm_ , env);
                     }
@@ -260,29 +264,48 @@ public class Interpreter {
             }
             return null;
         }
-        public Object visit(CPP.Absyn.SBlock p, Env env)
+        public Value visit(CPP.Absyn.SBlock p, Env env)
         {
             /* Code For SBlock Goes Here */
             //System.out.println("an block");
             env.enterScope();
             for(Stm s : p.liststm_)
             {
-                exeStm(s , env );
+                Value t = exeStm(s , env );
+                if(!(t == null))
+                {
+                    env.leaveScope();
+                    return (Value)t ;
+                }
             }
             env.leaveScope();
-            return null;
+            return null ;
         }
-        public Object visit(CPP.Absyn.SIfElse p, Env env)
+        public Value visit(CPP.Absyn.SIfElse p, Env env)
         {
             /* Code For SIfElse Goes Here */
             Value t = exeExp(p.exp_ , env);
             if(t.isInt())
             {
-                if(t.getInt() == 1 )
-                    exeStm(p.stm_1 , env);
+                Integer a = t.getInt(); 
+                if(a.equals(1) )
+                {
+                    Value o = exeStm(p.stm_1 , env);
+                    if(!(o == null))
+                    {
+                       return (Value)o ;
+                    
+                    }
+                }
                 else
-                    exeStm(p.stm_2 , env);
-            }
+                {
+                    Value o = exeStm(p.stm_2 , env);
+                    if(!(o == null))
+                    {
+                        return (Value)o;
+                    }
+                }
+             }
             //System.out.println("an if else");
             return null;
         }
@@ -413,8 +436,88 @@ public class Interpreter {
         public Value visit(CPP.Absyn.EApp p , Env env)
         {
             //System.out.println ("EApp");
-            
-            return null ;
+            if(p.id_ == "printInt") 
+            {
+                Exp x =  p.listexp_.get(0);
+                Value v = exeExp(x , env) ; 
+                System.out.println(v.toString());
+                return null; 
+            }
+            else if (p.id_ =="printDouble")
+            {
+                Exp x = p.listexp_.get(0); 
+                Value v = exeExp(x , env);
+                
+                System.out.println(v.toString());
+                return null; 
+            }
+            else if (p.id_ == "readInt")
+            {
+                /*DataInputStream in = new DataInputStream(System.in) ;
+                try{      
+                    Integer x = in.readInt();
+                    return new Value.IntValue(x);
+                }catch (Exception e )
+                {
+                    e.printStackTrace();
+                }
+                return null; */
+                
+                Integer x = Scan.nextInt();
+                return new Value.IntValue(x);
+            }
+            else if (p.id_ == "readDouble")
+            {
+                /*DataInputStream in = new DataInputStream(System.in) ;
+                try{
+                    Double x = in.readDouble();
+                    return new Value.DoubleValue(x);
+                }catch (Exception e )
+                {
+                    e.printStackTrace();
+                }
+                */
+                
+                //Scanner in = new Scanner(System.in);
+                double x = Scan.nextDouble();
+                return new Value.DoubleValue(x);
+                //return null; 
+            }
+            else
+            {
+               
+                FunExe F = env.lookupFun(p.id_);
+                //System.out.println("Enter " + p.id_);
+                //env.enterScope();
+                Value returnV ; 
+                LinkedList<Value> tmpList = new LinkedList<Value>(); 
+                for(Exp x : p.listexp_)
+                {
+                    tmpList.addLast(exeExp(x , env));
+                }
+                env.enterScope();
+                for(String s : F.args )
+                {
+                 //   System.out.println("arg : " + s + " value = " + tmpList.getFirst().toString());
+                    
+                    env.addVar(s);
+                    env.setVar(s , tmpList.remove());
+                }
+                for(Stm s : F.liststm_)
+                {
+                    Value t = exeStm(s , env) ; 
+                    if(! (t == null))
+                    {
+                   //     System.out.println("leave " + p.id_);
+                   //    System.out.println("return " + t.toString());
+                        env.leaveScope(); 
+                        return t ;
+                    } 
+                }
+                //System.out.println("leave " + p.id_);
+                env.leaveScope();
+                return null;
+            }
         }
         public Value visit(CPP.Absyn.EDouble p , Env env)
         {
@@ -622,14 +725,18 @@ public class Interpreter {
             Value t2 = exeExp(p.exp_2 , env);
             if(t1.isInt())
             {
-                if(t1.getInt() == t2.getInt())
+                Integer a = t1.getInt();
+                Integer b = t2.getInt();
+                if(a.equals(b))
                     return new Value.IntValue(1) ;
                 else
                     return new Value.IntValue(0) ;
             }
             else
             {
-                if(t1.getDouble() == t2.getDouble())
+                Double a = t1.getDouble();
+                Double b = t2.getDouble();
+                if(a.equals(b))
                     return new Value.IntValue(1);
                 else
                     return new Value.IntValue(0);
@@ -638,22 +745,26 @@ public class Interpreter {
         }
         public Value visit(CPP.Absyn.ENEq p , Env env)
         {
-           // System.out.println ("ENEq");
+            //ddSystem.out.println ("ENEq");
             Value t1 = exeExp(p.exp_1 , env);
             Value t2 = exeExp(p.exp_2 , env);
             if(t1.isInt())
             {
-                if(t1.getInt() != t2.getInt())
-                    return new Value.IntValue(1) ;
-                else
+                Integer a = t1.getInt(); 
+                Integer b = t2.getInt(); 
+                if( a.equals(b))
                     return new Value.IntValue(0) ;
+                else
+                    return new Value.IntValue(1) ;
             }
             else
             {
-                if(t1.getDouble() != t2.getDouble())
-                    return new Value.IntValue(1);
-                else
+                Double a = t1.getDouble();
+                Double b = t2.getDouble();
+                if(a.equals(b))
                     return new Value.IntValue(0);
+                else
+                    return new Value.IntValue(1);
             }
 
         }
@@ -663,20 +774,24 @@ public class Interpreter {
             Value t1 = exeExp(p.exp_1 , env);
             if(t1.isInt())
             {
-                if(t1.getInt() == 0)
+                Integer a = t1.getInt();
+                if(a.equals(0))
                     return new Value.IntValue(0) ; 
                 Value t2 = exeExp(p.exp_2 , env);
-                if(t1.getInt() == 1  && t2.getInt() == 1)
+                Integer b = t2.getInt();
+                if(  b.equals(1))
                     return new Value.IntValue(1) ;
                 else
                     return new Value.IntValue(0) ;
             }
             else
             {
-                if(t1.getDouble() == 0.0)
+                Double a = t1.getDouble();
+                if(a.equals(0.0))
                     return new Value.IntValue(0) ;
                 Value t2 = exeExp(p.exp_2 , env);
-                if(t1.getDouble() == 1.0 && t2.getDouble() == 1.0)
+                Double b = t2.getDouble();
+                if( b.equals(1.0))
                     return new Value.IntValue(1);
                 else
                     return new Value.IntValue(0);
@@ -690,32 +805,34 @@ public class Interpreter {
             Value t1 = exeExp(p.exp_1 , env);
             if(t1.isInt())
             {
-                if(t1.getInt() == 1)
+                Integer a = t1.getInt();
+                if(a.equals(1))
                     return new Value.IntValue(1) ;
                 Value t2 = exeExp(p.exp_2 , env);
-
-                if(t1.getInt() == 1 || t2.getInt() == 1)
+                Integer b = t2.getInt();
+                if(  b.equals(1))
                     return new Value.IntValue(1) ;
                 else
                     return new Value.IntValue(0) ;
             }
             else
             {
-                if(t1.getDouble() == 1.0)
+                Double a = t1.getDouble();
+                if(a.equals(1.0))
                     return new Value.IntValue(1) ;
                 Value t2 = exeExp(p.exp_2 , env);
-                if(t1.getDouble() == 1.0 || t2.getDouble() == 1.0)
+                Double b = t2.getDouble();
+                if( b.equals(1.0))
                     return new Value.IntValue(1);
                 else
                     return new Value.IntValue(0);
             }
-
         }
         public Value visit(CPP.Absyn.EAss p , Env env)
         {
            // System.out.println ("EAss");
             String id = getId(p.exp_1 , env);
-            System.out.println(id);
+            //System.out.println(id);
             Value v = exeExp(p.exp_2 , env);
             env.setVar(id , v);
             return v ;
