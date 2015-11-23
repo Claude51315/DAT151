@@ -1,24 +1,17 @@
 import CPP.Absyn.*;
 import java.util.HashMap;
 import java.util.LinkedList;  
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Scanner ; 
 public class Interpreter {
-    public static enum TypeCode 
-    {
-        Type_int , Type_double , Type_bool , Type_void 
-    }
-    //public DataInputStream DataIn = new DataInputStream(System.in) ;
+    //  Scanner for reading from standard input 
     public Scanner Scan = new Scanner(System.in);
+    // class for recording execution body of an function 
     public static class FunExe {
         public LinkedList<String> args ;
         public LinkedList<Stm> liststm_; 
         public Value returnValue; 
     }
+    
     public static class Env {
         public HashMap<String , FunExe> signature ; 
         public LinkedList<HashMap<String , Value>> contexts ; 
@@ -30,7 +23,6 @@ public class Interpreter {
         }
         public Value lookupVar(String id )
         {
-            // java iterate a linked list 
             for (HashMap<String , Value> context : contexts)
             {
                 Value t = context.get(id) ; 
@@ -38,19 +30,6 @@ public class Interpreter {
                     return t ; 
             }
             throw new RuntimeException("Unknown variable");
-        }
-        public boolean isFunDecl (String id )
-        {
-            return signature.containsKey(id); 
-        }
-        public boolean isVarDecl (String id )
-        {
-            Value t ; 
-            HashMap<String , Value> context =  contexts.getFirst(); 
-            t = context.get(id);
-            if(t != null)
-                return true ; 
-            return false ;
         }
         public FunExe lookupFun (String id)
         {
@@ -60,10 +39,12 @@ public class Interpreter {
             else
                 return t ; 
         }
+        // add variable to current scope  with value undefined 
         public void addVar(String id )
         {
             contexts.getFirst().put(id , new Value.Undefined());
         }
+        // set a new value to a variable 
         public void setVar(String id , Value V )
         {
             for( HashMap<String , Value> cur_scope : contexts)
@@ -84,6 +65,7 @@ public class Interpreter {
             contexts.removeFirst(); 
         }
     }
+    // class for Value 
     private static abstract class Value
     {
         public boolean isInt()
@@ -127,14 +109,14 @@ public class Interpreter {
             public String toString(){return d.toString() ; }
         }
     }   
-    // entry point 
+    // entry point of intepreter 
     public void interpret(Program p) 
     {
         PDefs defs = (PDefs) p ; 
         Env env = new Env() ; 
         for(Def d : defs.listdef_ )
         {
-            // add function execution body
+            // add function execution body except the main function
             checkDef1(d , env) ; 
         }
         
@@ -160,20 +142,7 @@ public class Interpreter {
             /* Code For DFun Goes Here */
             if(p.id_ != "main")
             {
-                //add function execution body here
-                /*
- *                   public static class FunExe {
- *                           public LinkedList<Value> args ;
- *                                   public LinkedList<Stm> liststm_;
- *                                           public Value returnValue;
- *                                               }
- *                                                   public static class Env {
- *                                                           public HashMap<String , FunExe> signature ;
- *                                                                   public LinkedList<HashMap<String , Value>> contexts ;
- *                                                                   
- *                  */
                 FunExe F = new FunExe() ;     
-                F.liststm_ = new LinkedList<Stm>() ;
                 F.liststm_ = p.liststm_ ;
                 F.args = new LinkedList<String>(); 
                 for (Arg x  : p.listarg_)
@@ -182,7 +151,6 @@ public class Interpreter {
                     F.args.addLast(tmp.id_); 
                 }
                 env.signature.put(p.id_ , F) ; 
-                
             }
             return null; 
         }                                
@@ -191,7 +159,6 @@ public class Interpreter {
     {
         public Object visit(CPP.Absyn.DFun p , Env env)
         {
-            // add function args to current scope 
             if(p.id_ != "main")
                 return null; 
             else
@@ -204,7 +171,9 @@ public class Interpreter {
             return null ; 
         }
     }
-    // check for statements 
+    // execute statements 
+    // only return statement return a Value 
+    // others retur null 
     private Value exeStm (Stm s , Env env)
     {
         return  s.accept(new StmExecuter() , env);
@@ -224,13 +193,11 @@ public class Interpreter {
             {
                 env.addVar(x);
             }
-            //System.out.println("an Decl");
             return null;
         }
         public Value visit(CPP.Absyn.SInit p, Env env)
         {
             /* Code For SInit Goes Here */
-            //System.out.println("decalation with initialization");
             env.addVar(p.id_);
             env.setVar(p.id_ , exeExp(p.exp_ , env));
             return null;
@@ -238,10 +205,7 @@ public class Interpreter {
         public Value visit(CPP.Absyn.SReturn p, Env env)
         {
             /* Code For SReturn Goes Here */
-             // check the returnType equal to function declaration 
-            //System.out.println("return" );
             Value t = exeExp(p.exp_ , env);
-            //System.out.println("SReturn : " + t.toString());
             return t ;
         }
         public Value visit(CPP.Absyn.SWhile p, Env env)
@@ -267,12 +231,11 @@ public class Interpreter {
         public Value visit(CPP.Absyn.SBlock p, Env env)
         {
             /* Code For SBlock Goes Here */
-            //System.out.println("an block");
             env.enterScope();
             for(Stm s : p.liststm_)
             {
                 Value t = exeStm(s , env );
-                if(!(t == null))
+                if(!(t == null)) // encounter a return statement
                 {
                     env.leaveScope();
                     return (Value)t ;
@@ -306,112 +269,12 @@ public class Interpreter {
                     }
                 }
              }
-            //System.out.println("an if else");
             return null;
         }
           
     }
-    
-    public String getId (Exp exp , Env env)
-    {
-        return exp.accept(new getIdMethod() , env);
-    } 
-    private class getIdMethod implements Exp.Visitor<String , Env>
-    {
-        public String visit(CPP.Absyn.EId p , Env env )
-        {
-            return p.id_ ; 
-        }
-        public String visit(CPP.Absyn.ETrue p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EFalse p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EInt p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EDouble p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EApp p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EPostIncr p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EPostDecr p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EPreIncr p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EPreDecr p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.ETimes p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EDiv p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EPlus p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EMinus p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.ELt p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EGt p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.ELtEq p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EGtEq p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EEq p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.ENEq p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EAnd p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EOr p , Env env )
-        {
-            return null ;
-        }
-        public String visit(CPP.Absyn.EAss p , Env env )
-        {
-            return null ;
-        }
-
-    }
+   
+    // execute exp
     public Value exeExp(Exp exp , Env env)
     {
         return exp.accept(new expExecuter() , env );
@@ -436,6 +299,7 @@ public class Interpreter {
         public Value visit(CPP.Absyn.EApp p , Env env)
         {
             //System.out.println ("EApp");
+            // hardcode the build-in functions
             if(p.id_ == "printInt") 
             {
                 Exp x =  p.listexp_.get(0);
@@ -453,68 +317,43 @@ public class Interpreter {
             }
             else if (p.id_ == "readInt")
             {
-                /*DataInputStream in = new DataInputStream(System.in) ;
-                try{      
-                    Integer x = in.readInt();
-                    return new Value.IntValue(x);
-                }catch (Exception e )
-                {
-                    e.printStackTrace();
-                }
-                return null; */
-                
                 Integer x = Scan.nextInt();
                 return new Value.IntValue(x);
             }
             else if (p.id_ == "readDouble")
             {
-                /*DataInputStream in = new DataInputStream(System.in) ;
-                try{
-                    Double x = in.readDouble();
-                    return new Value.DoubleValue(x);
-                }catch (Exception e )
-                {
-                    e.printStackTrace();
-                }
-                */
-                
-                //Scanner in = new Scanner(System.in);
                 double x = Scan.nextDouble();
                 return new Value.DoubleValue(x);
                 //return null; 
             }
             else
             {
-               
+                //execute a function call 
                 FunExe F = env.lookupFun(p.id_);
-                //System.out.println("Enter " + p.id_);
-                //env.enterScope();
-                Value returnV ; 
+                // evaluate the args first 
                 LinkedList<Value> tmpList = new LinkedList<Value>(); 
                 for(Exp x : p.listexp_)
                 {
                     tmpList.addLast(exeExp(x , env));
                 }
+                // add the arg to the function scope  
                 env.enterScope();
                 for(String s : F.args )
                 {
-                 //   System.out.println("arg : " + s + " value = " + tmpList.getFirst().toString());
-                    
                     env.addVar(s);
                     env.setVar(s , tmpList.remove());
+                
                 }
+                // execute function 
                 for(Stm s : F.liststm_)
                 {
                     Value t = exeStm(s , env) ; 
-                    if(! (t == null))
+                    if(! (t == null)) // encounter a return statement
                     {
-                   //     System.out.println("leave " + p.id_);
-                   //    System.out.println("return " + t.toString());
                         env.leaveScope(); 
                         return t ;
                     } 
                 }
-                //System.out.println("leave " + p.id_);
                 env.leaveScope();
                 return null;
             }
@@ -832,38 +671,111 @@ public class Interpreter {
         {
            // System.out.println ("EAss");
             String id = getId(p.exp_1 , env);
-            //System.out.println(id);
             Value v = exeExp(p.exp_2 , env);
             env.setVar(id , v);
             return v ;
         }
+    }
+    // function to get iden.  
+    // used in pre/post incr/decr and assignment  
+    public String getId (Exp exp , Env env)
+    {
+        return exp.accept(new getIdMethod() , env);
     } 
-
-
-
-    private TypeCode getTypeCode(Type t)
+    private class getIdMethod implements Exp.Visitor<String , Env>
     {
-        return t.accept(new TypeCoder() , null);
-    }
-    private class TypeCoder implements Type.Visitor<TypeCode , Object>
-    {
-        public TypeCode visit(Type_bool t, Object arg)
+        public String visit(CPP.Absyn.EId p , Env env )
         {
-            return TypeCode.Type_bool ; 
+            return p.id_ ; 
         }
-        public TypeCode visit(Type_int t, Object arg)
+        public String visit(CPP.Absyn.ETrue p , Env env )
         {
-            return TypeCode.Type_int ;
+            return null ;
         }
-        public TypeCode visit(Type_double t, Object arg)
+        public String visit(CPP.Absyn.EFalse p , Env env )
         {
-            return TypeCode.Type_double ;
+            return null ;
         }
-        public TypeCode visit(Type_void t, Object arg)
+        public String visit(CPP.Absyn.EInt p , Env env )
         {
-            return TypeCode.Type_void ;
+            return null ;
+        }
+        public String visit(CPP.Absyn.EDouble p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EApp p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EPostIncr p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EPostDecr p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EPreIncr p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EPreDecr p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.ETimes p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EDiv p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EPlus p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EMinus p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.ELt p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EGt p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.ELtEq p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EGtEq p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EEq p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.ENEq p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EAnd p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EOr p , Env env )
+        {
+            return null ;
+        }
+        public String visit(CPP.Absyn.EAss p , Env env )
+        {
+            return null ;
         }
 
     }
-   
 }
