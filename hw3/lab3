@@ -1,0 +1,8 @@
+#!/bin/sh
+
+dir=`dirname $0`
+java -cp "$dir:$CLASSPATH" lab3 "$@" 
+file="$@"
+file=${file%.*}
+java -jar jasmin.jar ${file}.j
+java ${file}
