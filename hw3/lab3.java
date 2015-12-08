@@ -17,9 +17,11 @@ public class lab3 {
             CPP.Absyn.Program parse_tree = p.pProgram();
             new TypeChecker().typecheck(parse_tree);
             String filename = args[0];
-            filename = filename.substring(0 , filename.length() - 3);
-            new CodeGenerator().codeGenerate(parse_tree , filename);
-//            new Interpreter().interpret(parse_tree);
+            String filepath = args[0]; 
+            int a = filename.lastIndexOf("/");
+            filename = filename.substring(a+1 , filename.length() - 3);
+            filepath = filepath.substring(0 , filepath.length() -3 );
+            new CodeGenerator().codeGenerate(parse_tree , filename , filepath );
 
         } catch (TypeException e) {
             System.out.println("TYPE ERROR");

@@ -21,7 +21,6 @@ bnfc:
 clean:
 	 -rm -f CPP/Absyn/*.class CPP/*.class
 	 -rm -f .dvi CPP.aux CPP.log CPP.ps  *.class
-	 -rm *.j
 
 distclean: vclean
 

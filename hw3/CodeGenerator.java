@@ -26,22 +26,24 @@ public class CodeGenerator
         // 
         public String getJVMFunHeader()
         {
-            //System.out.println(this.javaRef); 
-           // System.out.println(this.args.size()); 
             String ans = "(" ; 
             ListIterator<TypeCode> it  = this.args.listIterator();
             while(it.hasNext())
             {
-               if(it.next().equals(TypeCode.INT))
-                ans = ans + "I" ; 
+                TypeCode tmp = it.next();
+                if(tmp.equals(TypeCode.INT))
+                    ans = ans + "I" ; 
+                else if(tmp.equals(TypeCode.BOOL))
+                    ans = ans + "Z" ; 
             }
             ans = ans + ")";
-            //System.out.println(ans); 
             
             if(this.returnType.equals(TypeCode.INT))
                 ans = ans + "I" ; 
             if(this.returnType.equals(TypeCode.VOID))
                 ans = ans + "V" ; 
+            if(this.returnType.equals(TypeCode.BOOL))
+                ans = ans + "Z" ; 
             return ans ; 
         }
     }
@@ -51,7 +53,6 @@ public class CodeGenerator
         public LinkedList<Integer> varCount ;     
         public Integer labelCount ; 
         public TypeCode returnType ; 
-        //public LinkedList<HashMap<String , TypeCode>> contexts ; 
         public int returnFlag ; 
         public Env() 
         {
@@ -118,11 +119,11 @@ public class CodeGenerator
     {
         out.add(s + "\n");
     } 
-    private void outputResult( String filename)
+    private void outputResult( String filepath)
     {
         try{
             
-            FileWriter tmp = new FileWriter(filename + ".j");
+            FileWriter tmp = new FileWriter(filepath + ".j");
             for(String s : out)
                 tmp.write(s);
             tmp.close();
@@ -132,7 +133,7 @@ public class CodeGenerator
 
     }
     // entry point of code Generator
-    public void codeGenerate(Program p , String filename) 
+    public void codeGenerate(Program p , String filename , String filepath) 
     {
        
         // add JVM assembly 
@@ -186,7 +187,7 @@ public class CodeGenerator
             emit(".method public static " + df.id_ +FT.getJVMFunHeader());
             emit(".limit locals 100"); 
             emit(".limit stack 100"); 
-            // args??
+            // args
             env.enterScope();
             env.varCount.addFirst(0) ; 
             for(Arg a : df.listarg_)
@@ -217,7 +218,7 @@ public class CodeGenerator
             env.varCount.removeFirst();
             env.leaveScope();
         }
-        outputResult(filename);
+        outputResult(filepath);
     }
     private void generateStm (Stm s )
     {
@@ -295,7 +296,6 @@ public class CodeGenerator
             env.addLabelCount();
             Integer leaveLabel = env.lookupLabelCount();
             env.addLabelCount(); 
-            //emit("L" + enterLabel + ":");
             
             generateExp(p.exp_);
             emit(";; after generating Exp ");
@@ -356,24 +356,27 @@ public class CodeGenerator
         public Integer visit(CPP.Absyn.EPostIncr p, Object o )
         {
             Integer number = generateExp(p.exp_);
+            number = generateExp(p.exp_);
             emit("iconst_1");
             emit("iadd");
+            
             if(number != null )
             {
                 emit("istore_" + number);
-                emit("iload_" + number);
+                //emit("iload_" + number);
             }
             return null;
         }
         public Integer visit(CPP.Absyn.EPostDecr p, Object o )
         {
             Integer number = generateExp(p.exp_);
+             number = generateExp(p.exp_);
             emit("iconst_1");
             emit("isub");
             if(number != null )
             {
                 emit("istore_" + number);
-                emit("iload_" + number);
+                //emit("iload_" + number);
             }
             return null;
         }
