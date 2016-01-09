@@ -35,7 +35,7 @@ public class lab4 {
             //new TypeChecker().typecheck(parse_tree);
             new Interpreter().interpret(parse_tree , method  );
         }
-        /* catch (TypeException e) {
+         catch (TypeException e) {
             System.out.println("TYPE ERROR");
             System.err.println(e.toString());
             System.exit(1);
@@ -46,7 +46,7 @@ public class lab4 {
         } catch (IOException e) {
             System.err.println(e.toString());
             System.exit(1);
-        }*/
+        }
         catch (Throwable e) {
             System.out.println("SYNTAX ERROR");
             System.out.println("At line " + String.valueOf(l.line_num())

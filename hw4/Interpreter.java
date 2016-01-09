@@ -3,25 +3,14 @@ import java.util.HashMap;
 import java.util.LinkedList;  
 import java.util.Scanner ; 
 import java.util.Iterator;
+import java.util.Set;
 public class Interpreter {
     //  Scanner for reading from standard input 
-    public Scanner Scan = new Scanner(System.in);
-    public HashMap<String , Closure>  Funs ;
     public int flag = 0 ; 
-    public class FunDef 
-    {
-        private LinkedList<String> args; 
-        private Exp funBody ; 
-        FunDef(LinkedList<String> args , Exp funBody)
-        {
-            this.args = args ; 
-            this.funBody = funBody ; 
-        }
-    }
     public class Closure
     {
-        private Exp exp ; 
-        HashMap<String , Closure> sub;
+        public Exp exp ; 
+        public HashMap<String , Closure> sub;
         Closure(Exp e )
         {
             this.exp = e ;
@@ -32,9 +21,22 @@ public class Interpreter {
             exp = null ;
             sub = new HashMap<String , Closure>();
         }
-        public void addExp(Exp e )
+        Closure(Exp e , HashMap<String , Closure > sub)
         {
             this.exp = e ; 
+            this.sub = new HashMap<String , Closure>(sub); 
+        }
+        public void replaceClosure( HashMap<String , Closure> sub)
+        {
+            this.sub = new HashMap<String , Closure>(sub)  ;
+        }
+        public void replaceExp(Exp e )
+        {
+            this.exp = e ; 
+        }
+        public boolean isSubEmpty()
+        {
+            return sub.isEmpty(); 
         }
         public void addClosure(String name , Closure c)
         {
@@ -42,44 +44,22 @@ public class Interpreter {
         }
         public Integer getVal()
         {
-            EInt i = (EInt) exp ; 
-            return i.integer_ ; 
-        }
-    }
-    private abstract class Value
-    {
-        public boolean isInt()
-        {
-            return false ; 
-        }
-        public Integer getInt()
-        {
-            throw new RuntimeException(this + " is not an Integer");
-        }
-        public String print()
-        {
-            if(this.isInt())
-                return this.toString();
+            if(exp instanceof EInt)
+            {
+                EInt i = (EInt) exp ; 
+                return i.integer_ ; 
+            }
             else
-                return this.toString();
+                throw new RuntimeException("the exp is not an integer");
         }
-        public class IntValue extends Value 
+        public void printSub()
         {
-            private Integer i ; 
-            public IntValue(Integer i ){this.i = i ; }
-            public boolean isInt(){return true ; }
-            public Integer getInt(){ return i ;}
-            public String toString(){return i.toString();}
-        }
-    }
-    public class Env 
-    {
-        public HashMap<String , FunDef> signature ; 
-        public LinkedList<HashMap<String , Value>> contexts ; 
-        public Env() 
-        {
-            contexts = new LinkedList<HashMap<String ,Value>>() ; 
-            signature = new HashMap<String , FunDef>() ; 
+            Iterator<String> it = sub.keySet().iterator();
+            while(it.hasNext())
+            {
+                System.out.print(it.next() + " ") ; 
+            }
+            System.out.print("\n");
         }
     }
     // entry point of intepreter 
@@ -99,7 +79,6 @@ public class Interpreter {
             { 
                 // desugaring 
                 // example : fst x y = x  ->  fst = /x -> /y -> x 
-                //System.out.println(dd.ident_);
                 if(dd.listident_.size() > 0 )
                 {
                     LinkedList<String> argList = dd.listident_ ; 
@@ -121,25 +100,25 @@ public class Interpreter {
                         }
                     }
                 
-                    Closure tmp = new Closure();
-                    tmp.addExp(desugaring); 
-                    //eval(tmp);
- 
+                    Closure tmp = new Closure(desugaring);
                     mainCl.addClosure(dd.ident_ , tmp );
                 }
                 else
                 {
-                    Closure tmp = new Closure();
-                    tmp.addExp(dd.exp_);
+                    Closure tmp = new Closure(dd.exp_);
                     mainCl.addClosure(dd.ident_ , tmp ); 
                 }
             }
             else // add main exp 
             {
-                mainCl.addExp(dd.exp_); 
+                mainCl.replaceExp(dd.exp_); 
+                mainCl.addClosure(dd.ident_ , new Closure(dd.exp_));
             }
         }
-        Integer ans = eval(mainCl).getVal();
+        if(mainCl.exp == null)
+            throw new RuntimeException("no main function ");
+        Closure ansCl  = eval(mainCl);
+        Integer ans = eval(ansCl).getVal(); 
         System.out.println(ans);
     }
     
@@ -153,71 +132,92 @@ public class Interpreter {
     {
         public Closure visit(Fun.Absyn.EVar p , HashMap<String , Closure> sub)
         {
-            System.out.println("Evar");
-           
             
-            Closure c = sub.get(p.ident_) ; 
+            //System.out.println("Evar ");     
+            Closure c = sub.get(p.ident_) ;
             if(c == null)
-                System.out.println("bounding error");
+            {
+                throw new RuntimeException("bounding error");
+            }
             else
             {
+                if(c.isSubEmpty())
+                    c.replaceClosure(sub);
                 return c ;     
             }
-            return null;
          
         }
         public Closure visit(Fun.Absyn.EInt p , HashMap<String , Closure> sub)
         {
-            System.out.println("EInt");
-            Closure result = new Closure() ; 
-            result.addExp((Exp)p); 
+            //System.out.println("EInt");
+            Closure result = new Closure((Exp) p ) ; 
             return result ;         
-        
         }
         public Closure visit(Fun.Absyn.EApp p , HashMap<String , Closure> sub)
         {
-            System.out.println("EApp");
-            
-            Closure f = p.exp_1.accept(this, sub);
-            EAbs fabs = (EAbs) f.exp ; 
-            Closure a = p.exp_2.accept(this, sub) ; 
-            f.sub.put(fabs.ident_ , a ) ;
-            Closure result = fabs.exp_.accept(this , f.sub) ; 
-            f.sub.remove(fabs.ident_);
-            return result ; 
-            //return null;         
+            //System.out.println("EApp");
+            if(flag == 0 ) // call by value
+            {
+                Closure f = p.exp_1.accept(this, sub);
+                EAbs fabs = (EAbs) f.exp ; 
+                Closure a = p.exp_2.accept(this, sub) ; 
+                f.sub.put(fabs.ident_ , a ) ;
+                Closure result = fabs.exp_.accept(this , f.sub) ; 
+                f.sub.remove(fabs.ident_);
+                return result ; 
+            }
+            else  // call by name
+            {
+                Closure f = p.exp_1.accept(this,  sub);
+                EAbs fabs = (EAbs) f.exp ; 
+                f.sub.put(fabs.ident_ , new Closure(p.exp_2 , sub)); 
+                Closure result = fabs.exp_.accept(this, f.sub);
+                f.sub.remove(fabs.ident_);
+                return result; 
+            }
         }
         public Closure visit(Fun.Absyn.EAdd p , HashMap<String , Closure> sub)
         {
-            
-            System.out.println("EAdd");
+            //System.out.println("EAdd");
             Closure c1 = p.exp_1.accept(this, sub);
             Closure c2 = p.exp_2.accept(this, sub);
-            Integer ans = c1.getVal() + c2.getVal(); 
-            EInt tmp = new EInt(ans) ; 
-            Exp tmp2 = tmp; 
-            Closure result = new Closure();
-            result.addExp(tmp2);  
-            return result;         
+            if( c1.exp instanceof EInt  && c2.exp instanceof EInt)
+            {    
+                Integer ans = c1.getVal() + c2.getVal(); 
+                EInt tmp = new EInt(ans) ; 
+                Exp tmp2 = tmp; 
+                Closure result = new Closure(tmp2);
+                return result;         
+            }
+            else
+            {
+                throw new RuntimeException("cannot apply +");
+            }
         }
         public Closure visit(Fun.Absyn.ESub p , HashMap<String , Closure> sub)
         {
-            System.out.println("ESub");
+            //System.out.println("ESub");
             Closure c1 = p.exp_1.accept(this, sub);
             Closure c2 = p.exp_2.accept(this, sub);
-            Integer ans = c1.getVal() - c2.getVal();
-            EInt tmp = new EInt(ans) ;
-            Exp tmp2 = tmp;
-            Closure result = new Closure();
-            result.addExp(tmp2);
-            return result;
-
+            if( c1.exp instanceof EInt  && c2.exp instanceof EInt)
+            {
+                Integer ans = c1.getVal() - c2.getVal();
+                EInt tmp = new EInt(ans) ;
+                Exp tmp2 = tmp;
+                Closure result = new Closure(tmp2);
+                return result;
+            }
+            else
+            {
+                throw new RuntimeException("cannot apply -");
+            }
         }
         public Closure visit(Fun.Absyn.ELt p , HashMap<String , Closure> sub)
         {
-            System.out.println("ELt");
+            //System.out.println("ELt");
             Closure c1 = p.exp_1.accept(this, sub);
             Closure c2 = p.exp_2.accept(this, sub);
+            
             Integer ans = 0 ;
             if(c1.getVal() < c2.getVal())
                 ans = 1;
@@ -225,13 +225,12 @@ public class Interpreter {
                 ans = 0 ; 
             EInt tmp = new EInt(ans) ;
             Exp tmp2 = tmp;
-            Closure result = new Closure();
-            result.addExp(tmp2);
+            Closure result = new Closure(tmp2);
             return result;
         }
         public Closure visit(Fun.Absyn.EIf p , HashMap<String , Closure> sub)
         {
-            System.out.println("EIf");
+            //System.out.println("EIf");
             Closure c1 = p.exp_1.accept(this , sub);
             Closure result = null; 
             if(c1.getVal().equals(1))
@@ -242,14 +241,12 @@ public class Interpreter {
         }
         public Closure visit(Fun.Absyn.EAbs p , HashMap<String , Closure> sub)
         {
-        
-            System.out.println("EAbs");
-            Exp exp  = (Exp) p ; 
-            Closure tmp = new Closure();
-            tmp.addExp(p.exp_);
-            sub.put(p.ident_ , tmp) ; 
-            Closure result = p.exp_.accept(this , sub ) ; 
-            return result;
+            
+            //System.out.println("EAbs");
+            Exp exp = (Exp) p ; 
+            Closure result = new Closure(exp);
+            result.replaceClosure(sub) ; 
+            return result ; 
         }
     }
     
