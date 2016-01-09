@@ -2,7 +2,10 @@
 
 dir=`dirname $0`
 java -cp "$dir:$CLASSPATH" lab3 "$@" 
-#file="$@"
-#file=${file%.*}
-#java -jar jasmin.jar ${file}.j
+file="$@"
+file=${file%.*}
+filepath=${file%/*}
+java -jar jasmin.jar -d $filepath ${file}.j
+
+
 #java ${file}
